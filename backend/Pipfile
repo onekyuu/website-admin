@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 python-dotenv = "*"
+pylint-django = "*"
+setuptools = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 asgiref = "==3.8.1"
