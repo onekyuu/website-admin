@@ -88,15 +88,12 @@ WSGI_APPLICATION = 'blog.wsgi.application'
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
-        'ENGINE': 'django.db.backends.postgresql',   # 数据库引擎
-        # 数据库名，Django不会帮你创建，需要自己进入数据库创建。
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('PG_DB', 'postgres'),
-        'USER': os.getenv('PG_USER', 'website'),     # 设置的数据库用户名
-        'PASSWORD': os.getenv('PG_PASSWORD'),     # 设置的密码
-        'HOST': os.getenv('PG_HOST', 'localhost'),    # 本地主机或数据库服务器的ip
-        'PORT': os.getenv('PG_PORT', '5432'),         # 数据库使用的端口
+        'USER': os.getenv('PG_USER', 'website'),
+        'PASSWORD': os.getenv('PG_PASSWORD'),
+        'HOST': os.getenv('PG_HOST', 'localhost'),
+        'PORT': os.getenv('PG_PORT', '5432'),
     }
 }
 
