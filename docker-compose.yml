@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  web:
+    build: ./backend
+    container_name: admin-backend
+    command: gunicorn blog.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    restart: always
+
+  db:
+    image: postgres:17
+    container_name: website-db
+    environment:
+      POSTGRES_DB: website
+      POSTGRES_USER: website
+      POSTGRES_PASSWORD: 926453
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pgdata:
