@@ -19,7 +19,7 @@ class User(AbstractUser):
         return self.username
 
     def save(self, *args, **kwargs):
-        email_username, mobile = self.email.split('@')
+        email_username = self.email.split('@')
         if self.full_name == "" or self.full_name is None:
             self.full_name = email_username
         if self.username == "" or self.username is None:
@@ -38,7 +38,6 @@ class Profile(models.Model):
     author = models.BooleanField(default=False)
     country = models.CharField(max_length=100, null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
-    facebook = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.user.username
