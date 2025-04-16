@@ -1,3 +1,4 @@
 {
-  "python.linting.pylintArgs": ["--load-plugins", "pylint_django"]
+  "python.linting.pylintArgs": ["--load-plugins", "pylint_django"],
+  "pylint.enabled": true
 }

@@ -1,0 +1,51 @@
+name: Deploy to Aliyun
+
+on:
+  push:
+    branches:
+      - main # 监听 main 分支推送
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛎️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🐧 Set up SSH
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.ALIYUN_SSH_PRIVATE_KEY }}
+
+      - name: 📤 Copy project to Aliyun
+        run: |
+          rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ./ ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }}:/var/www/website-admin
+
+      - name: 🐳 SSH and deploy backend with Docker
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+            cd /var/www/website-admin
+
+            # 清理并重新构建后端服务
+            docker compose down || true
+            docker compose up -d --build
+EOF
+
+      - name: ⚙️ Install frontend dependencies & build (Next.js)
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+            cd /var/www/website-admin/frontend
+            corepack enable
+            corepack prepare pnpm@latest --activate
+            pnpm install
+            pnpm build
+EOF
+
+      - name: 🔄 Reload Nginx (可选)
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+            sudo nginx -s reload || true
+EOF
