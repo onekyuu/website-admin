@@ -32,7 +32,6 @@ jobs:
             # 清理并重新构建后端服务
             docker compose down || true
             docker compose up -d --build
-EOF
 
       - name: ⚙️ Install frontend dependencies & build (Next.js)
         run: |
@@ -42,10 +41,8 @@ EOF
             corepack prepare pnpm@latest --activate
             pnpm install
             pnpm build
-EOF
 
       - name: 🔄 Reload Nginx (可选)
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
             sudo nginx -s reload || true
-EOF
