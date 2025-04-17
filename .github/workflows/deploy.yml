@@ -24,6 +24,11 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }}:/var/www/website-admin
 
+      - name: 🧾 Prepare .env file on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+          cp /var/www/env/admin.env /var/www/website-admin/backend/.env
+
       - name: 🐳 SSH and deploy backend with Docker
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
