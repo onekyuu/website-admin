@@ -10,12 +10,11 @@ ENV LANG=C.UTF-8
 WORKDIR /app
 
 # 安装系统依赖（libpq-dev 是 PostgreSQL 驱动需要）
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    gcc \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y build-essential \
+#     libpq-dev \
+#     gcc \
+#     curl \
+#     && rm -rf /var/lib/apt/lists/*
 
 # 安装 pipenv
 RUN pip install --upgrade pip pipenv
