@@ -28,18 +28,20 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
           cp /var/www/env/admin.env /var/www/website-admin/backend/.env
+EOF
 
       - name: 🐳 SSH and deploy backend with Docker
         run: |
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
           ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
           echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login registry.cn-shanghai.aliyuncs.com \
-                  -u ${{ secrets.ALIYUN_REGISTRY_USERNAME }} --password-stdin << 'EOF'
+                  -u ${{ secrets.ALIYUN_REGISTRY_USERNAME }} --password-stdin
           cd /var/www/website-admin
 
           # 清理并重新构建后端服务
           sudo docker compose down || true
           sudo docker compose up -d --build
+EOF
 
       - name: ⚙️ Install frontend dependencies & build (Next.js)
         run: |
