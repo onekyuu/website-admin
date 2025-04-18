@@ -28,7 +28,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
           cp /var/www/env/admin.env /var/www/website-admin/backend/.env
-EOF
+          EOF
 
       - name: 🐳 SSH and deploy backend with Docker
         run: |
@@ -41,7 +41,7 @@ EOF
           # 清理并重新构建后端服务
           sudo docker compose down || true
           sudo docker compose up -d --build
-EOF
+          EOF
 
       - name: ⚙️ Install frontend dependencies & build (Next.js)
         run: |
