@@ -26,9 +26,8 @@ jobs:
 
       - name: 🧾 Prepare .env file on server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} \
           cp /var/www/env/admin.env /var/www/website-admin/backend/.env
-          EOF
 
       - name: 🐳 SSH and deploy backend with Docker
         run: |
