@@ -29,31 +29,32 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
             cp /var/www/env/admin.env /var/www/website-admin/backend/.env
             echo "[✔] .env copied content:"
-            cat ./backend/.env
+            cat /var/www/website-admin/backend/.env
             echo EOF
 
       - name: 🐳 SSH and deploy backend with Docker
         run: |
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
           ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
-            echo '${{ secrets.ALIYUN_REGISTRY_PASSWORD }}' | docker login ${{ secrets.ALIYUN_REGISTRY_SERVER }} \
+            echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login ${{ secrets.ALIYUN_REGISTRY_SERVER }} \
               -u ${{ secrets.ALIYUN_REGISTRY_USERNAME }} --password-stdin
-                cd /var/www/website-admin
-                sudo docker compose down || true
-                sudo docker compose up -d --build"
+
+            cd /var/www/website-admin
+            sudo docker compose down || true
+            sudo docker compose up -d --build
 
       - name: ⚙️ Install frontend dependencies & build (Next.js)
         run: |
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
-          ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} && \
-            cd /var/www/website-admin/frontend && \
-            corepack enable && \
-            corepack prepare pnpm@latest --activate && \
-            pnpm install && \
+          ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+            cd /var/www/website-admin/frontend
+            corepack enable
+            corepack prepare pnpm@latest --activate
+            pnpm install
             pnpm build
 
       - name: 🔄 Reload Nginx (可选)
         run: |
           ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} \
+          ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
           "sudo nginx -s reload || true"
