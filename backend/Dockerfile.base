@@ -1,0 +1,25 @@
+# 使用官方 Python 镜像
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV LANG=C.UTF-8
+
+WORKDIR /app
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 pipenv
+RUN pip install --upgrade pip pipenv
+
+# 拷贝 Pipfile 和 Pipfile.lock（只为安装依赖）
+COPY Pipfile Pipfile.lock ./
+
+# 安装依赖到系统环境
+RUN pipenv install --system --deploy --ignore-pipfile

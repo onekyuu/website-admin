@@ -1,5 +1,5 @@
-# 使用官方 Python 镜像，带 slim 附加名以减小体积
-FROM python:3.12-slim
+# 使用阿里云ACR 镜像
+FROM registry.cn-shanghai.aliyuncs.com/keyu-images/website-admin-base:latest
 
 # 设置环境变量，防止 encoding 警告
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -17,11 +17,11 @@ WORKDIR /app
 #     && rm -rf /var/lib/apt/lists/*
 
 # 安装 pipenv
-RUN pip install --upgrade pip pipenv
+# RUN pip install --upgrade pip pipenv
 
 # 拷贝 Pipfile 文件并安装依赖
-COPY Pipfile Pipfile.lock ./
-RUN pipenv install --system --deploy --ignore-pipfile
+# COPY Pipfile Pipfile.lock ./
+# RUN pipenv install --system --deploy --ignore-pipfile
 
 # 拷贝整个项目代码（避免安装依赖后再复制可能会触发缓存失效）
 COPY . .
