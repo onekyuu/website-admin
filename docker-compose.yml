@@ -1,6 +1,6 @@
 services:
   web:
-    build: ./backend
+    image: registry.cn-shanghai.aliyuncs.com/keyu-images/website-admin-base:latest
     container_name: admin-backend
     command: gunicorn blog.wsgi:application --bind 0.0.0.0:8000
     volumes:
