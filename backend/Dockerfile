@@ -1,5 +1,5 @@
 # 使用阿里云ACR 镜像
-FROM registry.cn-shanghai.aliyuncs.com/keyu-images/website-admin-base:latest
+FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-base:latest
 
 # 设置环境变量，防止 encoding 警告
 ENV PYTHONDONTWRITEBYTECODE=1
