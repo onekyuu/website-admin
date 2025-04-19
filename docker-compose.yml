@@ -1,5 +1,6 @@
 services:
   web:
+    build: ./backend
     image: registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-base:latest
     container_name: admin-backend
     # command: gunicorn blog.wsgi:application --bind 0.0.0.0:8000
@@ -10,6 +11,8 @@ services:
       - "8000:8000"
     env_file:
       - ./backend/.env
+    depends_on:
+      - db
     restart: always
 
   db:
@@ -19,6 +22,15 @@ services:
       - ./backend/.env
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: admin-frontend
+    env_file:
+      - ./frontend/.env
+    ports:
+      - "3000:3000"
     restart: always
 
 volumes:
