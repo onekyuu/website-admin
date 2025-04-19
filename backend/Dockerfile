@@ -1,13 +1,14 @@
 # 使用阿里云ACR 镜像
 FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-base:latest
 
+# 设置工作目录
+WORKDIR /app
+
 # 设置环境变量，防止 encoding 警告
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV LANG=C.UTF-8
-
-# 设置工作目录
-WORKDIR /app
+ENV PYTHONPATH=/app
 
 # 拷贝整个项目代码（避免安装依赖后再复制可能会触发缓存失效）
 COPY . .
