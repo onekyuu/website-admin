@@ -45,10 +45,12 @@ jobs:
               sudo docker compose up -d --build
           EOF
 
-      - name: ⚙️ Install frontend dependencies & build (Next.js)
+      - name: PNPM deps
         uses: pnpm/action-setup@v4
         with:
           version: 10
+
+      - name: ⚙️ Install frontend dependencies & build (Next.js)
         run: |
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
           ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
