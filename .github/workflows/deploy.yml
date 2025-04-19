@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: 🛎️ Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🐧 Set up SSH
         uses: webfactory/ssh-agent@v0.9.1
@@ -43,8 +43,12 @@ jobs:
               cd /var/www/website-admin
               sudo docker compose down || true
               sudo docker compose up -d --build
+          EOF
 
       - name: ⚙️ Install frontend dependencies & build (Next.js)
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
         run: |
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
           ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
@@ -53,6 +57,7 @@ jobs:
             corepack prepare pnpm@latest --activate
             pnpm install
             pnpm build
+          EOF
 
       - name: 🔄 Reload Nginx (可选)
         run: |
