@@ -16,4 +16,9 @@ A admin for my website
 - TailwindCSS
 - shadcn/ui
 
+## Deploy
+
+- Docker
+- Docker-compose
+
 # 🚀Usage
