@@ -43,21 +43,21 @@ jobs:
               sudo docker compose up -d --build
           EOF
 
-      - name: PNPM deps
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      # - name: PNPM deps
+      #   uses: pnpm/action-setup@v4
+      #   with:
+      #     version: 10
 
-      - name: ⚙️ Install frontend dependencies & build (Next.js)
-        run: |
-          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
-          ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
-            cd /var/www/website-admin/frontend
-            sudo corepack enable
-            sudo corepack prepare pnpm@latest --activate
-            pnpm install
-            pnpm build
-          EOF
+      # - name: ⚙️ Install frontend dependencies & build (Next.js)
+      #   run: |
+      #     ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
+      #     ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+      #       cd /var/www/website-admin/frontend
+      #       sudo corepack enable
+      #       sudo corepack prepare pnpm@latest --activate
+      #       pnpm install
+      #       pnpm build
+      #     EOF
 
       # - name: 🔄 Reload Nginx (可选)
       #   run: |
