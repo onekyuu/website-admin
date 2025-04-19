@@ -28,9 +28,10 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
             cp /var/www/env/admin.env /var/www/website-admin/backend/.env
+            cp /var/www/env/admin.frontend.env /var/www/website-admin/frontend/.env 
           EOF
 
-      - name: 🐳 SSH and deploy backend with Docker
+      - name: 🐳 SSH and deploy both backend & frontend with Docker
         run: |
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
             ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
