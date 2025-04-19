@@ -55,8 +55,8 @@ jobs:
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=600 -o ServerAliveCountMax=3 \
           ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
             cd /var/www/website-admin/frontend
-            corepack enable
-            corepack prepare pnpm@latest --activate
+            sudo corepack enable
+            sudo corepack prepare pnpm@latest --activate
             pnpm install
             pnpm build
           EOF
