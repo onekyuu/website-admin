@@ -13,10 +13,10 @@ WORKDIR /app
 COPY . .
 
 # 收集静态文件
-RUN pipenv run python manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput
 
 # 暴露端口
 EXPOSE 8000
 
 # 默认启动命令（一般由 docker-compose 覆盖）
-CMD ["pipenv", "run", "gunicorn", "blog.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "blog.wsgi:application", "--bind", "0.0.0.0:8000"]
