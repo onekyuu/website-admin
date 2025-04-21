@@ -15,6 +15,8 @@ A admin for my website
 - Next.js
 - TailwindCSS
 - shadcn/ui
+- Zustand
+- React Query
 
 ## Deploy
 
