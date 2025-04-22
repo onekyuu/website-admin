@@ -8,15 +8,13 @@ interface BearState {
 
 const useBearStore = create<BearState>()(
   devtools(
-    persist(
-      (set) => ({
-        bears: 0,
-        increase: (by) => set((state) => ({ bears: state.bears + by })),
-      }),
-      {
-        name: "bear-storage",
-      }
-    )
+    (set) => ({
+      bears: 0,
+      increase: (by) => set((state) => ({ bears: state.bears + by })),
+    }),
+    {
+      name: "bear-storage",
+    }
   )
 );
 
