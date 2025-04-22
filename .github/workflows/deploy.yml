@@ -43,7 +43,7 @@ jobs:
               sudo docker compose up -d --build
 
               echo "⏳ Waiting for containers to initialize..."
-              sleep 5
+              sleep 10
 
               echo "🧱 Running migrations..."
               sudo docker compose exec -T backend python manage.py migrate
