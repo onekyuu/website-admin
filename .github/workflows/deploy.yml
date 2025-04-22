@@ -45,6 +45,8 @@ jobs:
               echo "⏳ Waiting for containers to initialize..."
               sleep 10
 
+              # echo "🧱 Running migrations..."
+              # sudo docker compose exec -T backend python manage.py migrate
               echo "🧱 Running migrations..."
-              sudo docker compose exec -T backend python manage.py migrate
+              sudo docker compose run --rm backend python manage.py migrate
           EOF
