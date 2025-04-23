@@ -65,3 +65,59 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         user = api_models.User.objects.get(id=user_id)
         profile = api_models.Profile.objects.get(user=user)
         return profile
+
+
+class CategoryListApiView(generics.ListAPIView):
+    serializer_class = api_serializer.CategorySerializer
+    permission_classes = [AllowAny]
+
+    # @swagger_auto_schema(
+    #     operation_summary="Get all categories",
+    #     responses={200: api_serializer.CategorySerializer(many=True)}
+    # )
+    def get_queryset(self):
+        return api_models.Category.objects.all()
+
+
+class PostCategoryListApiView(generics.ListAPIView):
+    serializer_class = api_serializer.PostSerializer
+    permission_classes = [AllowAny]
+
+    # @swagger_auto_schema(
+    #     operation_summary="Get all post categories",
+    #     responses={200: api_serializer.PostCategorySerializer(many=True)}
+    # )
+    def get_queryset(self):
+        category_slug = self.kwargs['category_slug']
+        category = api_models.Category.objects.get(slug=category_slug)
+        posts = api_models.Post.objects.filter(
+            category=category, status='Active')
+        return posts
+
+
+class PostListAPIView(generics.ListAPIView):
+    serializer_class = api_serializer.PostSerializer
+    permission_classes = [AllowAny]
+
+    # @swagger_auto_schema(
+    #     operation_summary="Get all posts",
+    #     responses={200: api_serializer.PostSerializer(many=True)}
+    # )
+    def get_queryset(self):
+        return api_models.Post.objects.filter(status='Active')
+
+
+class PostDetailAPIView(generics.RetrieveAPIView):
+    serializer_class = api_serializer.PostSerializer
+    permission_classes = [AllowAny]
+
+    # @swagger_auto_schema(
+    #     operation_summary="Get post details",
+    #     responses={200: api_serializer.PostSerializer}
+    # )
+    def get_object(self):
+        slug = self.kwargs['slug']
+        post = api_models.Post.objects.get(slug=slug, status='Active')
+        post.view += 1
+        post.save()
+        return post
