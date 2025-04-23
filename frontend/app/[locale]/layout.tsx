@@ -44,7 +44,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body className={cn(fonts[locale])}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
