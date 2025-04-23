@@ -17,4 +17,20 @@ urlpatterns = [
     path('post/like-post/', api_views.LikePostAPIView.as_view()),
     path('post/comment-post/', api_views.PostCommentAPIView.as_view()),
     path('post/bookmark-post/', api_views.BookmarkPostAPIView.as_view()),
+
+    path('author/dashboard/stats/<user_id>/',
+         api_views.DashboradAPIView.as_view()),
+    path('author/dashboard/comment-list/<user_id>/',
+         api_views.DashboardCommentLists.as_view()),
+    path('author/dashboard/noti-list/<user_id>/',
+         api_views.DashboardNotificationsList.as_view()),
+    path('author/dashboard/mark-noti-seen/',
+         api_views.DashboardMarkNotificationAsSeen.as_view()),
+    path('author/dashboard/reply-comment/',
+         api_views.DashboardReplyCommentAPIView.as_view()),
+    path('author/dashboard/post-create/',
+         api_views.DashboardPostCreateAPIView.as_view()),
+    path('author/dashboard/post-detail/<user_id>/<post_id>/',
+         api_views.DashboardPostUpdateAPIView.as_view()),
+
 ]

@@ -227,3 +227,209 @@ class BookmarkPostAPIView(APIView):
             #     type='Bookmark',
             # )
             return Response({"message": "Post bookmarked"}, status=status.HTTP_201_CREATED)
+
+
+class DashboradAPIView(generics.ListAPIView):
+    serializer_class = api_serializer.AuthorSerializer
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="Get author dashboard stats",
+        responses={200: api_serializer.AuthorSerializer(many=True)}
+    )
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        user = api_models.User.objects.get(id=user_id)
+
+        views = api_models.Post.objects.filter(
+            user=user).aggregate(view=Sum('views'))["view"]
+        posts = api_models.Post.objects.filter(user=user).count()
+        likes = api_models.Post.objects.filter(
+            user=user).aggregate(total_likes=Sum('likes'))["total_likes"]
+        bookmarks = api_models.Bookmark.objects.filter(post__user=user).count()
+
+        return [{
+            "views": views,
+            "posts": posts,
+            "likes": likes,
+            "bookmarks": bookmarks,
+        }]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class DashboardPostLists(generics.ListAPIView):
+    serializer_class = api_serializer.PostSerializer
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="Get all posts by user",
+        responses={200: api_serializer.PostSerializer(many=True)}
+    )
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        user = api_models.User.objects.get(id=user_id)
+        return api_models.Post.objects.filter(user=user).order_by("-id")
+
+
+class DashboardCommentLists(generics.ListAPIView):
+    serializer_class = api_serializer.CommentSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        user = api_models.User.objects.get(id=user_id)
+        return api_models.Comment.objects.filter(post__user=user).order_by("-id")
+
+
+class DashboardNotificationsList(generics.ListAPIView):
+    serializer_class = api_serializer.NotificationSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        user = api_models.User.objects.get(id=user_id)
+        return api_models.Notification.objects.all(seen=False, user=user)
+
+
+class DashboardMarkNotificationAsSeen(APIView):
+    @swagger_auto_schema(
+        operation_summary="Mark notification as seen",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'noti_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            },
+        ),
+        responses={200: "Notification marked as seen successfully"}
+    )
+    def post(self, request):
+        noti_id = request.data["noti_id"]
+        noti = api_models.Notification.objects.get(id=noti_id)
+        noti.seen = True
+        noti.save()
+        return Response({"message": "Notification seen"}, status=status.HTTP_200_OK)
+
+
+class DashboardReplyCommentAPIView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Reply to a comment",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'comment_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'reply': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+        ),
+        responses={200: "Comment replied successfully"}
+    )
+    def post(self, request):
+        comment_id = request.data["comment_id"]
+        reply = request.data["reply"]
+
+        comment = api_models.Comment.objects.get(id=comment_id)
+        comment.reply = reply
+        comment.save()
+        return Response({"message": "Reply added"}, status=status.HTTP_200_OK)
+
+
+class DashboardPostCreateAPIView(generics.CreateAPIView):
+    serializer_class = api_serializer.PostSerializer
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="Create a new post",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'title': openapi.Schema(type=openapi.TYPE_STRING),
+                'image': openapi.Schema(type=openapi.TYPE_STRING),
+                'description': openapi.Schema(type=openapi.TYPE_STRING),
+                'tags': openapi.Schema(type=openapi.TYPE_STRING),
+                'category': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'post_status': openapi.Schema(type=openapi.TYPE_STRING),
+                'content': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+        ),
+        responses={201: "Post created successfully"}
+    )
+    def create(self, request, *args, **kwargs):
+        user_id = request.data.get("user_id")
+        title = request.data.get("title")
+        image = request.data.get("image")
+        description = request.data.get("description")
+        tags = request.data.get("tags")
+        category_id = request.data.get("category")
+        post_status = request.data.get("post_status")
+        content = request.data["content"]
+
+        user = api_models.User.objects.get(id=user_id)
+        category = api_models.Category.objects.get(id=category_id)
+
+        api_models.Post.objects.create(
+            user=user,
+            title=title,
+            image=image,
+            description=description,
+            tags=tags,
+            category=category,
+            status=post_status,
+            content=content
+        )
+        return Response({"message": "Post created"}, status=status.HTTP_201_CREATED)
+
+
+class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = api_serializer.PostSerializer
+    permission_classes = [AllowAny]
+
+    def get_object(self):
+        user_id = self.kwargs['user_id']
+        post_id = self.kwargs['post_id']
+
+        user = api_models.User.objects.get(id=user_id)
+        post = api_models.Post.objects.get(id=post_id, user=user)
+        return post
+
+    @swagger_auto_schema(
+        operation_summary="Update a post",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'title': openapi.Schema(type=openapi.TYPE_STRING),
+                'image': openapi.Schema(type=openapi.TYPE_STRING),
+                'description': openapi.Schema(type=openapi.TYPE_STRING),
+                'tags': openapi.Schema(type=openapi.TYPE_STRING),
+                'category': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'post_status': openapi.Schema(type=openapi.TYPE_STRING),
+                'content': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+        ),
+        responses={200: "Post updated successfully"}
+    )
+    def update(self, request, *args, **kwargs):
+        post_instance = self.get_object()
+        title = request.data.get("title")
+        image = request.data.get("image")
+        description = request.data.get("description")
+        tags = request.data.get("tags")
+        category_id = request.data.get("category")
+        post_status = request.data.get("post_status")
+        content = request.data["content"]
+
+        category = api_models.Category.objects.get(id=category_id)
+
+        post_instance.title = title
+        if image != 'undefined':
+            post_instance.image = image
+        post_instance.description = description
+        post_instance.tags = tags
+        post_instance.category = category
+        post_instance.status = post_status
+        post_instance.content = content
+        post_instance.save()
+        return Response({"message": "Post updated"}, status=status.HTTP_200_OK)
