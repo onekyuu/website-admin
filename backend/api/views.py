@@ -42,13 +42,13 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = api_serializer.RegisterSerializer
 
-    # @swagger_auto_schema(
-    #     operation_summary="Register a new user",
-    #     request_body=api_serializer.RegisterSerializer,
-    #     responses={201: "User created successfully", 400: "Bad request"}
-    # )
-    # def post(self, request, *args, **kwargs):
-    #     return super().post(request, *args, **kwargs)
+    @swagger_auto_schema(
+        operation_summary="Register a new user",
+        request_body=api_serializer.RegisterSerializer,
+        responses={201: "User created successfully", 400: "Bad request"}
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -56,10 +56,10 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [AllowAny]
     serializer_class = api_serializer.ProfileSerializer
 
-    # @swagger_auto_schema(
-    #     operation_summary="Get user profile",
-    #     responses={200: api_serializer.ProfileSerializer}
-    # )
+    @swagger_auto_schema(
+        operation_summary="Get user profile",
+        responses={200: api_serializer.ProfileSerializer}
+    )
     def get_object(self):
         user_id = self.kwargs['user_id']
         user = api_models.User.objects.get(id=user_id)
@@ -71,10 +71,10 @@ class CategoryListApiView(generics.ListAPIView):
     serializer_class = api_serializer.CategorySerializer
     permission_classes = [AllowAny]
 
-    # @swagger_auto_schema(
-    #     operation_summary="Get all categories",
-    #     responses={200: api_serializer.CategorySerializer(many=True)}
-    # )
+    @swagger_auto_schema(
+        operation_summary="Get all categories",
+        responses={200: api_serializer.CategorySerializer(many=True)}
+    )
     def get_queryset(self):
         return api_models.Category.objects.all()
 
@@ -83,10 +83,10 @@ class PostCategoryListApiView(generics.ListAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
 
-    # @swagger_auto_schema(
-    #     operation_summary="Get all post categories",
-    #     responses={200: api_serializer.PostCategorySerializer(many=True)}
-    # )
+    @swagger_auto_schema(
+        operation_summary="Get posts by category",
+        responses={200: api_serializer.PostSerializer(many=True)}
+    )
     def get_queryset(self):
         category_slug = self.kwargs['category_slug']
         category = api_models.Category.objects.get(slug=category_slug)
@@ -99,10 +99,10 @@ class PostListAPIView(generics.ListAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
 
-    # @swagger_auto_schema(
-    #     operation_summary="Get all posts",
-    #     responses={200: api_serializer.PostSerializer(many=True)}
-    # )
+    @swagger_auto_schema(
+        operation_summary="Get all posts",
+        responses={200: api_serializer.PostSerializer(many=True)}
+    )
     def get_queryset(self):
         return api_models.Post.objects.filter(status='Active')
 
@@ -111,13 +111,45 @@ class PostDetailAPIView(generics.RetrieveAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
 
-    # @swagger_auto_schema(
-    #     operation_summary="Get post details",
-    #     responses={200: api_serializer.PostSerializer}
-    # )
+    @swagger_auto_schema(
+        operation_summary="Get post details",
+        responses={200: api_serializer.PostSerializer}
+    )
     def get_object(self):
         slug = self.kwargs['slug']
         post = api_models.Post.objects.get(slug=slug, status='Active')
         post.view += 1
         post.save()
         return post
+
+
+class LikePostAPIView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Like or unlike a post",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'post_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            },
+        ),
+        responses={200: "Post liked/unliked successfully"}
+    )
+    def post(self, request):
+        user_id = request.data["user_id"]
+        post_id = request.data["post_id"]
+
+        user = api_models.User.objects.get(id=user_id)
+        post = api_models.Post.objects.get(id=post_id)
+
+        if user in post.likes.all():
+            post.likes.remove(user)
+            return Response({"message": "Post unliked"}, status=status.HTTP_200_OK)
+        else:
+            post.likes.add(user)
+            api_models.Notification.objects.create(
+                user=post.user,
+                post=post,
+                type='Like',
+            )
+            return Response({"message": "Post liked"}, status=status.HTTP_200_OK)
