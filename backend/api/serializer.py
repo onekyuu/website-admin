@@ -74,7 +74,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        super(CommentSerializer).__init__(*args, **kwargs)
+        super(CommentSerializer, self).__init__(*args, **kwargs)
         request = self.context.get('request')
         if request and request.method == 'POST':
             self.Meta.depth = 0
@@ -88,7 +88,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        super(PostSerializer).__init__(*args, **kwargs)
+        super(PostSerializer, self).__init__(*args, **kwargs)
         request = self.context.get('request')
         if request and request.method == 'POST':
             self.Meta.depth = 0
@@ -102,7 +102,7 @@ class BookmarkSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        super(BookmarkSerializer).__init__(*args, **kwargs)
+        super(BookmarkSerializer, self).__init__(*args, **kwargs)
         request = self.context.get('request')
         if request and request.method == 'POST':
             self.Meta.depth = 0
@@ -116,7 +116,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        super(NotificationSerializer).__init__(*args, **kwargs)
+        super(NotificationSerializer, self).__init__(*args, **kwargs)
         request = self.context.get('request')
         if request and request.method == 'POST':
             self.Meta.depth = 0
