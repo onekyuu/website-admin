@@ -76,6 +76,91 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --color-primary-50: oklch(0.967 0.017 241.84);
+  --color-primary-100: oklch(0.929 0.035 241.84);
+  --color-primary-200: oklch(0.867 0.07 241.84);
+  --color-primary-300: oklch(0.765 0.14 241.84);
+  --color-primary-400: oklch(0.647 0.22 241.84);
+  --color-primary-500: oklch(0.529 0.28 241.84);
+  --color-primary-600: oklch(0.408 0.32 241.84);
+  --color-primary-700: oklch(0.329 0.32 241.84);
+  --color-primary-800: oklch(0.267 0.32 241.84);
+  --color-primary-900: oklch(0.208 0.32 241.84);
+
+  --color-secondary-50: oklch(0.985 0.005 261.23);
+  --color-secondary-100: oklch(0.945 0.03 261.23);
+  --color-secondary-200: oklch(0.882 0.06 261.23);
+  --color-secondary-300: oklch(0.784 0.12 261.23);
+  --color-secondary-400: oklch(0.678 0.18 261.23);
+  --color-secondary-500: oklch(0.561 0.24 261.23);
+  --color-secondary-600: oklch(0.451 0.28 261.23);
+  --color-secondary-700: oklch(0.369 0.28 261.23);
+  --color-secondary-800: oklch(0.302 0.28 261.23);
+  --color-secondary-900: oklch(0.247 0.28 261.23);
+
+  --color-gray-50: oklch(0.985 0.005 261.23);
+  --color-gray-100: oklch(0.965 0.01 261.23);
+  --color-gray-200: oklch(0.914 0.02 261.23);
+  --color-gray-300: oklch(0.835 0.03 261.23);
+  --color-gray-400: oklch(0.702 0.04 261.23);
+  --color-gray-500: oklch(0.561 0.05 261.23);
+  --color-gray-600: oklch(0.451 0.06 261.23);
+  --color-gray-700: oklch(0.369 0.06 261.23);
+  --color-gray-800: oklch(0.278 0.06 261.23);
+  --color-gray-900: oklch(0.192 0.06 261.23);
+
+  --color-background-1: oklch(0.97 0.01 261.23);
+  --color-background-2: oklch(0.94 0.01 261.23);
+  --color-background-3: oklch(0.88 0.02 261.23);
+  --color-background-4: oklch(0.81 0.03 261.23);
+
+  --color-background-dark-1: oklch(0.21 0.03 261.23);
+  --color-background-dark-2: oklch(0.17 0.03 261.23);
+  --color-background-dark-3: oklch(0.13 0.03 261.23);
+  --color-background-dark-4: oklch(0.1 0.03 261.23);
+  --color-gradient-1: radial-gradient(
+    var(--color-primary-700) 0%,
+    var(--color-secondary-500) 100%
+  );
+  --color-gradient-2: conic-gradient(
+    var(--color-primary-700) 4%,
+    var(--color-secondary-500) 99%
+  );
+  --color-gradient-3: radial-gradient(
+    var(--color-primary-700) 0%,
+    var(--color-secondary-500) 100%
+  );
+  --color-gradient-4: linear-gradient(
+    var(--color-primary-100) 0%,
+    var(--color-secondary-100) 100%
+  );
+  --color-gradient-5: radial-gradient(
+    color-mix(in srgb, var(--color-primary-700) 60%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 60%, transparent) 100%
+  );
+  --color-gradient-6: linear-gradient(
+    var(--color-primary-700) 4%,
+    var(--color-secondary-500) 100%
+  );
+  --color-gradient-7: radial-gradient(
+    var(--color-primary-900) 0%,
+    var(--color-secondary-900) 100%
+  );
+  --color-gradient-8: radial-gradient(
+    var(--color-primary-700) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 0%, transparent) 100%
+  );
+  --color-gradient-9: linear-gradient(#cfd0fc 0%, #fbd0ee 100%);
+  --color-gradient-10: radial-gradient(#7c7eea 0%, #4c4d9d 100%);
+  --color-gradient-text-1: linear-gradient(
+    var(--color-primary-700) 4%,
+    var(--color-secondary-500) 79%
+  );
+  --color-gradient-text-2: radial-gradient(
+    var(--color-primary-300) 0%,
+    var(--color-primary-200) 50%,
+    var(--color-secondary-300) 100%
+  );
 }
 
 .dark {
@@ -119,4 +204,15 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+@layer utilities {
+  .gradient-text-1 {
+    --foreground: var(--color-gradient-text-1);
+  }
+}
+.svg-background {
+  background-image: url("../public/hero.svg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
 }
