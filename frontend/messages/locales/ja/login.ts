@@ -1,3 +1,12 @@
 export default {
-  welcome: "こんにちは",
+  email: "メールアドレス",
+  password: "パスワード",
+  signIn: "サインイン",
+  signOut: "サインアウト",
+  emailPlaceholder: "メールアドレスを入力してください",
+  passwordPlaceholder: "パスワードを入力してください",
+  emailDescription: "メールアドレスを入力してください",
+  passwordDescription: "パスワードを入力してください",
+  signInSuccess: "サインインに成功しました",
+  signInError: "サインインに失敗しました",
 };
