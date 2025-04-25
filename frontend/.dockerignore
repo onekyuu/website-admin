@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+pnpm-lock.yaml
+*.log
+.env
+*.swp
+.vscode
+__pycache__
+.DS_Store
+docker-compose.yml
