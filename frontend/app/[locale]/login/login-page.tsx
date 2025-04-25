@@ -4,9 +4,7 @@ import LoginForm from "@/components/LoginForm";
 import { useRouter } from "@/i18n/navigations";
 import { FC } from "react";
 
-interface LoginPageProps {}
-
-const LoginPage: FC<LoginPageProps> = () => {
+const LoginPage: FC = () => {
   const router = useRouter();
   const handleSubmit = () => {
     router.push("/");
