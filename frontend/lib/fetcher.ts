@@ -9,6 +9,7 @@ function isAccessTokenExpired(token: string | undefined): boolean {
     const payload = JSON.parse(atob(token.split(".")[1]));
     return Date.now() >= payload.exp * 1000;
   } catch (err) {
+    console.log(err);
     return true;
   }
 }
@@ -32,7 +33,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
 export async function fetcher<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   let accessToken = Cookies.get("access_token");
 
@@ -48,9 +49,8 @@ export async function fetcher<T>(
   };
 
   if (accessToken) {
-    (headers as Record<string, string>)[
-      "Authorization"
-    ] = `Bearer ${accessToken}`;
+    (headers as Record<string, string>)["Authorization"] =
+      `Bearer ${accessToken}`;
   }
 
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
