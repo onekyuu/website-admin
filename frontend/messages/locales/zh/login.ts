@@ -9,4 +9,6 @@ export default {
   passwordDescription: "请输入密码",
   signInSuccess: "登录成功",
   signInError: "登录失败",
+  emailErrorMessage: "无效的邮箱地址",
+  passwordErrorMessage: "密码必须至少6个字符",
 };

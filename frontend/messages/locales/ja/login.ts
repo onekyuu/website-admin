@@ -9,4 +9,6 @@ export default {
   passwordDescription: "パスワードを入力してください",
   signInSuccess: "サインインに成功しました",
   signInError: "サインインに失敗しました",
+  emailErrorMessage: "無効なメールアドレスです",
+  passwordErrorMessage: "パスワードは6文字以上でなければなりません",
 };

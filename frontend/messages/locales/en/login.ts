@@ -9,4 +9,6 @@ export default {
   passwordDescription: "Please enter your password",
   signInSuccess: "Sign in successful",
   signInError: "Sign in failed",
+  emailErrorMessage: "Invalid email address",
+  passwordErrorMessage: "Password must be at least 6 characters",
 };
