@@ -52,10 +52,11 @@
     "typescript": "^5"
   },
   "lint-staged": {
-    "**/*.{js,ts,jsx,tsx}": [
-      "eslint --fix"
+    "**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
     ],
-    "**/*.{js,ts,jsx,tsx,json,css,md}": [
+    "**/*.{json,css,md}": [
       "prettier --write"
     ]
   }
