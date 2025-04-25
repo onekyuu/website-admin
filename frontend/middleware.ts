@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
     `^(/(${locales.join("|")}))?(${publicPages
       .flatMap((p) => (p === "/" ? ["", "/"] : p))
       .join("|")})/?$`,
-    "i"
+    "i",
   );
   const isPublicPage = publicPathnameRegex.test(request.nextUrl.pathname);
 
@@ -30,7 +30,7 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("access_token")?.value;
 
   if (!accessToken) {
-    const loginUrl = new URL(`/${localePrefix}/login`, request.url);
+    const loginUrl = new URL(`${localePrefix}/login`, request.url);
     return NextResponse.redirect(loginUrl);
   }
 
