@@ -5,6 +5,8 @@ import { routing } from "@/i18n/config";
 import { Roboto, Noto_Sans_JP, Noto_Sans_SC } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ReactQueryProvider } from "@/lib/react-query";
+import { Toaster } from "@/components/ui/sonner";
 
 type Props = {
   children: ReactNode;
@@ -42,14 +44,17 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <html lang={locale}>
       <body className={cn(fonts[locale])}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <NextIntlClientProvider>{children}</NextIntlClientProvider>
-        </ThemeProvider>
+        <ReactQueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <NextIntlClientProvider>{children}</NextIntlClientProvider>
+          </ThemeProvider>
+        </ReactQueryProvider>
+        <Toaster />
       </body>
     </html>
   );
