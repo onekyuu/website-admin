@@ -1,5 +1,5 @@
 # 使用阿里云ACR 镜像
-FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-frontend-base:latest AS base
+FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-frontend-base:v1.0.0 AS base
 
 # Rebuild the source code only when needed
 FROM base AS builder
