@@ -1,4 +1,4 @@
-export default {
+const Login = {
   email: "邮箱",
   password: "密码",
   signIn: "登录",
@@ -12,3 +12,5 @@ export default {
   emailErrorMessage: "无效的邮箱地址",
   passwordErrorMessage: "密码必须至少6个字符",
 };
+
+export default Login;

@@ -1,7 +1,9 @@
-import login from "./locales/zh/login";
-import menu from "./locales/zh/menu";
+import Header from "./locales/zh/header";
+import Login from "./locales/zh/login";
+import Menu from "./locales/zh/menu";
 
 export default {
-  Login: login,
-  Menu: menu,
+  Login,
+  Menu,
+  Header,
 };

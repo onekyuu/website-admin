@@ -1,7 +1,6 @@
 "use client";
 import { FC } from "react";
 import { useLocale } from "next-intl";
-// import { usePathname, useRouter } from "next-intl/client";
 import { localeItems, usePathname, useRouter } from "@/i18n/navigations";
 import {
   Select,

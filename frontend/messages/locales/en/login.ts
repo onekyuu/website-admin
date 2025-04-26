@@ -1,4 +1,4 @@
-export default {
+const Login = {
   email: "Email",
   password: "Password",
   signIn: "Sign In",
@@ -12,3 +12,5 @@ export default {
   emailErrorMessage: "Invalid email address",
   passwordErrorMessage: "Password must be at least 6 characters",
 };
+
+export default Login;

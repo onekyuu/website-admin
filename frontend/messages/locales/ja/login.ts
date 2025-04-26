@@ -1,4 +1,4 @@
-export default {
+const Login = {
   email: "メールアドレス",
   password: "パスワード",
   signIn: "サインイン",
@@ -12,3 +12,5 @@ export default {
   emailErrorMessage: "無効なメールアドレスです",
   passwordErrorMessage: "パスワードは6文字以上でなければなりません",
 };
+
+export default Login;
