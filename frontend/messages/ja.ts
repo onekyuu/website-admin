@@ -1,7 +1,9 @@
-import login from "./locales/ja/login";
-import menu from "./locales/ja/menu";
+import Header from "./locales/ja/header";
+import Login from "./locales/ja/login";
+import Menu from "./locales/ja/menu";
 
 export default {
-  Login: login,
-  Menu: menu,
+  Login,
+  Menu,
+  Header,
 };

@@ -1,3 +1,4 @@
+"use client";
 import { FC } from "react";
 import Header from "./Header";
 import { cn } from "@/lib/utils";
@@ -9,9 +10,11 @@ interface LayoutProps {
 
 const Layout: FC<LayoutProps> = ({ children, className }) => {
   return (
-    <div className={"h-screen w-screen flex-col"}>
+    <div className={"min-h-screen w-screen flex flex-col"}>
       <Header />
-      <div className={cn(`mt-12 flex-1 ${className ?? ""}`)}>{children}</div>
+      <div className={cn(`flex flex-col flex-1 ${className ?? ""}`)}>
+        {children}
+      </div>
     </div>
   );
 };

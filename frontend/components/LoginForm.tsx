@@ -17,10 +17,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 
 import { useTranslations } from "next-intl";
-import { login } from "@/lib/auth";
 
 interface LoginFormProps {
-  onSubmit: () => void;
+  onSubmit: ({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }) => Promise<void>;
 }
 const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
   const t = useTranslations("Login");
@@ -43,9 +48,7 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
-      const signInResult = await login(data);
-      console.log("signInResult", signInResult);
-      onSubmit();
+      await onSubmit(data);
     } catch (error) {
       throw error;
     }

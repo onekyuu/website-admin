@@ -1,3 +1,4 @@
-export default {
+const Menu = {
   menu: "メニュー",
 };
+export default Menu;
