@@ -54,9 +54,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    is_superuser = serializers.SerializerMethodField()
+
     class Meta:
         model = api_models.Profile
         fields = "__all__"
+
+    def get_is_superuser(self, obj):
+        return obj.user.is_superuser
 
 
 class CategorySerializer(serializers.ModelSerializer):
