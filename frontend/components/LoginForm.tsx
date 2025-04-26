@@ -17,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 
 import { useTranslations } from "next-intl";
+import { PasswordInput } from "./PasswordInput";
 
 interface LoginFormProps {
   onSubmit: ({
@@ -66,6 +67,7 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
                 <FormLabel>{t("email")}</FormLabel>
                 <FormControl>
                   <Input
+                    required
                     className={"w-72"}
                     {...field}
                     placeholder={t("emailPlaceholder")}
@@ -83,7 +85,12 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
               <FormItem>
                 <FormLabel>{t("password")}</FormLabel>
                 <FormControl>
-                  <Input className={"w-72"} {...field} />
+                  <PasswordInput
+                    className={"w-72"}
+                    {...field}
+                    type="password"
+                    required
+                  />
                 </FormControl>
                 <FormDescription>{t("passwordDescription")}</FormDescription>
                 <FormMessage />
