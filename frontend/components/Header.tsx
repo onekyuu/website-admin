@@ -19,14 +19,13 @@ const Header: FC = () => {
     setIsMounted(true);
   }, []);
   return (
-    <div className="h-18 w-full bg-gray-800 flex items-center justify-between">
-      <div>header</div>
+    <div className="h-16 w-full px-8 flex items-center justify-between">
+      <div>{t("title")}</div>
       <div className="flex w-max gap-4">
         <LocaleSwitcher />
         <ModeToggle />
         {isMounted && isLoggedIn && (
           <Button
-            variant="outline"
             onClick={async () => {
               await logout();
               router.push("/login");

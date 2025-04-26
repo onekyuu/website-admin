@@ -202,7 +202,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-medium;
   }
 }
 @layer utilities {
@@ -215,4 +215,13 @@
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
