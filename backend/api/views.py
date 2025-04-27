@@ -19,6 +19,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission, SAFE_METHODS, IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.pagination import PageNumberPagination
 
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -31,6 +32,12 @@ import random
 # Custom Imports
 from api import models as api_models
 from api import serializer as api_serializer
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20  # 每页20条
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -61,22 +68,14 @@ class IsOwnerOrReadOnly(BasePermission):
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
-    # queryset = api_models.Profile.objects.all()
-    # permission_classes = [AllowAny]
-    # serializer_class = api_serializer.ProfileSerializer
-
-    # @swagger_auto_schema(
-    #     operation_summary="Get user profile",
-    #     responses={200: api_serializer.ProfileSerializer}
-    # )
-    # def get_object(self):
-    #     user_id = self.kwargs['user_id']
-    #     user = api_models.User.objects.get(id=user_id)
-    #     profile = api_models.Profile.objects.get(user=user)
-    #     return profile
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
-    # 获取资料（GET）
+    @swagger_auto_schema(
+        operation_summary="Get or update user profile",
+        request_body=api_serializer.ProfileSerializer,
+        responses={200: api_serializer.ProfileSerializer,
+                   404: "User not found"}
+    )
     def get(self, request, user_id):
         try:
             user = api_models.User.objects.get(id=user_id)
@@ -86,7 +85,6 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         except (api_models.User.DoesNotExist, api_models.Profile.DoesNotExist):
             return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
 
-    # 更新资料（POST）
     def post(self, request, user_id):
         try:
             user = api_models.User.objects.get(id=user_id)
@@ -119,6 +117,7 @@ class CategoryListApiView(generics.ListAPIView):
 class PostCategoryListApiView(generics.ListAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
+    pagination_class = StandardResultsSetPagination
 
     @swagger_auto_schema(
         operation_summary="Get posts by category",
@@ -135,6 +134,7 @@ class PostCategoryListApiView(generics.ListAPIView):
 class PostListAPIView(generics.ListAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
+    pagination_class = StandardResultsSetPagination
 
     @swagger_auto_schema(
         operation_summary="Get all posts",
@@ -301,6 +301,7 @@ class DashboradAPIView(generics.ListAPIView):
 class DashboardPostLists(generics.ListAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
+    pagination_class = StandardResultsSetPagination
 
     @swagger_auto_schema(
         operation_summary="Get all posts by user",
