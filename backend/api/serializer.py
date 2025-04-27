@@ -59,6 +59,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.Profile
         fields = "__all__"
+        read_only_fields = ('user',)
 
     def get_is_superuser(self, obj):
         return obj.user.is_superuser
