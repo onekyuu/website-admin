@@ -20,7 +20,7 @@ jobs:
 
       - name: 📤 Copy project to Aliyun
         run: |
-          rsync -avz --delete \
+          rsync -avz --exclude='frontend/.env.production' --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }}:/var/www/website-admin
 
