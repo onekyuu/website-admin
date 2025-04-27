@@ -4,12 +4,24 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { Boxes, Command, FileText, LayoutDashboard } from "lucide-react";
+import {
+  Boxes,
+  ChartBarStacked,
+  Command,
+  FileText,
+  LayoutDashboard,
+  Package,
+  PackageOpen,
+} from "lucide-react";
 import { NavUser } from "./NavUser";
 import useUserData from "@/lib/useUserData";
 import { get } from "@/lib/fetcher";
@@ -56,6 +68,39 @@ export function AppSidebar() {
     }),
     [userProfile],
   );
+
+  const navMain = useMemo(
+    () => [
+      {
+        title: "Dashboard",
+        url: "/dashboard",
+        icon: <LayoutDashboard className="size-4" />,
+      },
+      {
+        title: "Posts",
+        icon: <Package className="size-4" />,
+        items: [
+          {
+            title: "All Posts",
+            url: "/posts",
+            icon: <PackageOpen className="size-4" />,
+          },
+          {
+            title: "New Post",
+            url: "/posts/new",
+            icon: <FileText className="size-4" />,
+          },
+        ],
+      },
+      {
+        title: "Category",
+        url: "/category",
+        icon: <ChartBarStacked className="size-4" />,
+      },
+    ],
+    [],
+  );
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -76,24 +121,41 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg">
-              <Link href="/dashboard">
-                <LayoutDashboard className="size-4" />
-                <span>Dashboard</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg">
-              <Link href="/posts">
-                <FileText className="size-4" />
-                <span>Post</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <SidebarGroup>
+          <SidebarMenu className="gap-2">
+            {navMain.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild size="lg">
+                  {item.url ? (
+                    <Link href={item.url}>
+                      {item.icon}
+                      <span>{item.title}</span>
+                    </Link>
+                  ) : (
+                    <p>
+                      {item.icon}
+                      <span>{item.title}</span>
+                    </p>
+                  )}
+                </SidebarMenuButton>
+                {item.items?.length ? (
+                  <SidebarMenuSub className="ml-0 border-l-0 px-1.5">
+                    {item.items.map((item) => (
+                      <SidebarMenuSubItem key={item.title}>
+                        <SidebarMenuSubButton asChild>
+                          <Link href={item.url}>
+                            {item.icon}
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                ) : null}
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
 
         {userProfile?.user.is_superuser && (
           <NavSecondary items={data.navSecondary} className="mt-auto" />
