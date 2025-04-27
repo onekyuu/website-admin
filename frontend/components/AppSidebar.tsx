@@ -23,14 +23,16 @@ import {
   PackageOpen,
 } from "lucide-react";
 import { NavUser } from "./NavUser";
-import useUserData from "@/lib/useUserData";
+import useUserData from "@/hooks/useUserData";
 import { get } from "@/lib/fetcher";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { NavSecondary } from "./NavSecondary";
 import { Link } from "@/i18n/navigations";
+import { useTranslations } from "next-intl";
 
 export function AppSidebar() {
+  const t = useTranslations();
   const userId = useUserData()?.user_id;
   const {
     data: userProfile,
@@ -51,55 +53,50 @@ export function AppSidebar() {
   console.log("isLoading", isLoading);
   console.log("error", error);
 
-  const data = useMemo(
+  const navUser = useMemo(
     () => ({
-      user: {
-        name: userProfile?.user.username || "",
-        email: userProfile?.user.email || "",
-        avatar: userProfile?.user.image || "",
-      },
-      navSecondary: [
-        {
-          title: "Register",
-          url: "/register",
-          icon: Command,
-        },
-      ],
+      name: userProfile?.user.username || "",
+      email: userProfile?.user.email || "",
+      avatar: userProfile?.user.image || "",
     }),
     [userProfile],
   );
 
-  const navMain = useMemo(
-    () => [
-      {
-        title: "Dashboard",
-        url: "/dashboard",
-        icon: <LayoutDashboard className="size-4" />,
-      },
-      {
-        title: "Posts",
-        icon: <Package className="size-4" />,
-        items: [
-          {
-            title: "All Posts",
-            url: "/posts",
-            icon: <PackageOpen className="size-4" />,
-          },
-          {
-            title: "New Post",
-            url: "/posts/new",
-            icon: <FileText className="size-4" />,
-          },
-        ],
-      },
-      {
-        title: "Category",
-        url: "/category",
-        icon: <ChartBarStacked className="size-4" />,
-      },
-    ],
-    [],
-  );
+  const navMain = [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: <LayoutDashboard className="size-4" />,
+    },
+    {
+      title: "Posts",
+      icon: <Package className="size-4" />,
+      items: [
+        {
+          title: "All Posts",
+          url: "/posts",
+          icon: <PackageOpen className="size-4" />,
+        },
+        {
+          title: "New Post",
+          url: "/posts/new",
+          icon: <FileText className="size-4" />,
+        },
+      ],
+    },
+    {
+      title: "Category",
+      url: "/category",
+      icon: <ChartBarStacked className="size-4" />,
+    },
+  ];
+  const navSecondary = [
+    {
+      title: t("Login.signUp"),
+      url: "/signup",
+      icon: Command,
+    },
+  ];
 
   return (
     <Sidebar>
@@ -158,11 +155,11 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {userProfile?.user.is_superuser && (
-          <NavSecondary items={data.navSecondary} className="mt-auto" />
+          <NavSecondary items={navSecondary} className="mt-auto" />
         )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={navUser} />
       </SidebarFooter>
     </Sidebar>
   );

@@ -24,7 +24,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = api_models.User
-        fields = ['full_name', 'username', 'email',
+        fields = ['username', 'email',
                   'password', 'confirm_password']
 
     def validate(self, attrs):
@@ -36,11 +36,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         email_username = validated_data['email'].split('@')[0]
         username = validated_data.get('username', None)
+        full_name = validated_data.get('full_name', None)
 
         user = api_models.User(
             email=validated_data['email'],
-            full_name=validated_data['full_name'],
-            username=username if username else email_username,
+            full_name=full_name if full_name else email_username,
+            username=username,
         )
         user.set_password(validated_data['password'])
         user.save()

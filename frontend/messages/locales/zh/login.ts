@@ -11,6 +11,15 @@ const Login = {
   signInError: "登录失败",
   emailErrorMessage: "无效的邮箱地址",
   passwordErrorMessage: "密码必须至少6个字符",
+  confirmPasswordErrorMessage: "密码必须至少6个字符",
+  confirmPasswordNotMatchErrorMessage: "密码不匹配",
+  username: "用户名",
+  usernameDescription: "请输入用户名，至少4个字符",
+  confirmPassword: "确认密码",
+  confirmPasswordDescription: "请再次输入密码以确认",
+  signUp: "注册",
+  signUpSuccess: "注册成功",
+  signUpError: "注册失败",
 };
 
 export default Login;

@@ -11,6 +11,16 @@ const Login = {
   signInError: "Sign in failed",
   emailErrorMessage: "Invalid email address",
   passwordErrorMessage: "Password must be at least 6 characters",
+  confirmPasswordErrorMessage:
+    "Confirm Passwords must be at least 6 characters",
+  confirmPasswordNotMatchErrorMessage: "Passwords do not match",
+  username: "Username",
+  usernameDescription: "Please enter your username, at least 4 characters",
+  confirmPassword: "Confirm Password",
+  confirmPasswordDescription: "Please confirm your password",
+  signUp: "Sign Up",
+  signUpSuccess: "Sign up successful",
+  signUpError: "Sign up failed",
 };
 
 export default Login;
