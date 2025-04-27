@@ -11,6 +11,15 @@ const Login = {
   signInError: "サインインに失敗しました",
   emailErrorMessage: "無効なメールアドレスです",
   passwordErrorMessage: "パスワードは6文字以上でなければなりません",
+  confirmPasswordErrorMessage: "パスワードは6文字以上でなければなりません",
+  confirmPasswordNotMatchErrorMessage: "パスワードが一致しません",
+  username: "ユーザー名",
+  usernameDescription: "ユーザー名を入力してください（4文字以上）",
+  confirmPassword: "パスワードを確認",
+  confirmPasswordDescription: "パスワードを確認してください",
+  signUp: "サインアップ",
+  signUpSuccess: "サインアップに成功しました",
+  signUpError: "サインアップに失敗しました",
 };
 
 export default Login;

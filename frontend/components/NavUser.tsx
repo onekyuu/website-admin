@@ -24,16 +24,14 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigations";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
-}) {
-  const t = useTranslations("Header");
+interface NavUserProps {
+  name: string;
+  email: string;
+  avatar: string;
+}
+
+export function NavUser({ user }: { user: NavUserProps }) {
+  const t = useTranslations();
   const { isMobile } = useSidebar();
   const router = useRouter();
 
@@ -48,7 +46,9 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {user.name.slice(0, 3)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
@@ -99,7 +99,7 @@ export function NavUser({
                   toast.success(t("signOutSuccess"));
                 }}
               >
-                {t("signOut")}
+                {t("Header.signOut")}
               </Button>
             </DropdownMenuItem>
           </DropdownMenuContent>
