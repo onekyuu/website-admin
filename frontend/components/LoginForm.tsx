@@ -50,6 +50,7 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       await onSubmit(data);
+      form.reset();
     } catch (error) {
       throw error;
     }
@@ -85,12 +86,7 @@ const LoginForm: FC<LoginFormProps> = ({ onSubmit }) => {
               <FormItem>
                 <FormLabel>{t("password")}</FormLabel>
                 <FormControl>
-                  <PasswordInput
-                    className={"w-72"}
-                    {...field}
-                    type="password"
-                    required
-                  />
+                  <PasswordInput className={"w-72"} {...field} required />
                 </FormControl>
                 <FormDescription>{t("passwordDescription")}</FormDescription>
                 <FormMessage />

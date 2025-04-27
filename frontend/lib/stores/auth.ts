@@ -8,6 +8,7 @@ import { persist } from "zustand/middleware";
 export interface AuthUserState {
   user_id: string | null;
   username: string | null;
+  email: string | null;
 }
 
 interface AuthState {
@@ -33,6 +34,7 @@ const useAuthStore = create<AuthState>()(
       user: () => ({
         user_id: get().allUserData?.user_id || null,
         username: get().allUserData?.username || null,
+        email: get().allUserData?.email || null,
       }),
 
       // Define a function 'setUser' that allows setting the 'allUserData' state.

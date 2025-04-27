@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission, SAFE_METHODS, IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -51,20 +51,57 @@ class RegisterView(generics.CreateAPIView):
         return super().post(request, *args, **kwargs)
 
 
-class ProfileView(generics.RetrieveUpdateAPIView):
-    queryset = api_models.Profile.objects.all()
-    permission_classes = [AllowAny]
-    serializer_class = api_serializer.ProfileSerializer
+class IsOwnerOrReadOnly(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # 允许GET、HEAD、OPTIONS请求
+        if request.method in SAFE_METHODS:
+            return True
+        # 检查是否是用户本人或超级用户
+        return obj.user == request.user or request.user.is_superuser
 
-    @swagger_auto_schema(
-        operation_summary="Get user profile",
-        responses={200: api_serializer.ProfileSerializer}
-    )
-    def get_object(self):
-        user_id = self.kwargs['user_id']
-        user = api_models.User.objects.get(id=user_id)
-        profile = api_models.Profile.objects.get(user=user)
-        return profile
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    # queryset = api_models.Profile.objects.all()
+    # permission_classes = [AllowAny]
+    # serializer_class = api_serializer.ProfileSerializer
+
+    # @swagger_auto_schema(
+    #     operation_summary="Get user profile",
+    #     responses={200: api_serializer.ProfileSerializer}
+    # )
+    # def get_object(self):
+    #     user_id = self.kwargs['user_id']
+    #     user = api_models.User.objects.get(id=user_id)
+    #     profile = api_models.Profile.objects.get(user=user)
+    #     return profile
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+    # 获取资料（GET）
+    def get(self, request, user_id):
+        try:
+            user = api_models.User.objects.get(id=user_id)
+            profile = api_models.Profile.objects.get(user=user)
+            serializer = api_serializer.ProfileSerializer(profile)
+            return Response(serializer.data)
+        except (api_models.User.DoesNotExist, api_models.Profile.DoesNotExist):
+            return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
+
+    # 更新资料（POST）
+    def post(self, request, user_id):
+        try:
+            user = api_models.User.objects.get(id=user_id)
+            profile = api_models.Profile.objects.get(user=user)
+            self.check_object_permissions(
+                request, profile)  # 检查权限（IsOwnerOrReadOnly）
+
+            serializer = api_serializer.ProfileSerializer(
+                profile, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except (api_models.User.DoesNotExist, api_models.Profile.DoesNotExist):
+            return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class CategoryListApiView(generics.ListAPIView):
