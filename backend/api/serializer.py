@@ -54,6 +54,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
     is_superuser = serializers.SerializerMethodField()
 
     class Meta:
