@@ -94,3 +94,56 @@ export async function fetcher<T>(
 
   return res.json();
 }
+/**
+ * 将对象转换为 URL 查询字符串
+ * @example { page: 1, name: 'test' } => 'page=1&name=test'
+ */
+function buildQueryString(params?: Record<string, string | number>): string {
+  if (!params) return "";
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) {
+      query.append(key, String(value));
+    }
+  }
+  return query.toString();
+}
+
+/**
+ * 封装 GET 请求
+ * @param endpoint API 路径（不需要包含 base URL）
+ * @param params 查询参数对象（会自动转成 URL 查询字符串）
+ * @param options 额外的 fetch 配置
+ */
+export async function get<T>(
+  endpoint: string,
+  params?: Record<string, string | number>,
+  options?: RequestInit,
+): Promise<T> {
+  // 处理查询参数
+  const queryString = buildQueryString(params);
+  const finalEndpoint = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+  return fetcher<T>(finalEndpoint, {
+    ...options,
+    method: "GET",
+  });
+}
+
+/**
+ * 封装 POST 请求
+ * @param endpoint API 路径（不需要包含 base URL）
+ * @param data 请求体数据（会自动序列化成 JSON）
+ * @param options 额外的 fetch 配置
+ */
+export async function post<T, D>(
+  endpoint: string,
+  data?: D,
+  options?: RequestInit,
+): Promise<T> {
+  return fetcher<T>(endpoint, {
+    ...options,
+    method: "POST",
+    body: data ? JSON.stringify(data) : undefined,
+  });
+}

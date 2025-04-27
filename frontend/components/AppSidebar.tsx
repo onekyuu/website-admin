@@ -4,48 +4,100 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Command } from "lucide-react";
+import { Boxes, Command, FileText, LayoutDashboard } from "lucide-react";
 import { NavUser } from "./NavUser";
-import { useAuthStore } from "@/lib/stores/auth";
+import useUserData from "@/lib/useUserData";
+import { get } from "@/lib/fetcher";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { NavSecondary } from "./NavSecondary";
+import { Link } from "@/i18n/navigations";
 
 export function AppSidebar() {
-  const userData = useAuthStore((state) => state.allUserData);
+  const userId = useUserData()?.user_id;
+  const {
+    data: userProfile,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["posts"],
+    queryFn: () =>
+      get<{
+        user: {
+          username: string;
+          email: string;
+          image: string;
+          is_superuser: boolean;
+        };
+      }>(`/user/profile/${userId}/`),
+  });
+  console.log("isLoading", isLoading);
+  console.log("error", error);
 
-  const data = {
-    user: {
-      name: userData?.username || "Username",
-      email: userData?.email || "example.@example.com",
-      avatar: "/avatars/shadcn.jpg",
-    },
-  };
+  const data = useMemo(
+    () => ({
+      user: {
+        name: userProfile?.user.username || "",
+        email: userProfile?.user.email || "",
+        avatar: userProfile?.user.image || "",
+      },
+      navSecondary: [
+        {
+          title: "Register",
+          url: "/register",
+          icon: Command,
+        },
+      ],
+    }),
+    [userProfile],
+  );
   return (
     <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Command className="size-4" />
+                  <Boxes className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">SEELE</span>
                   <span className="truncate text-xs">Admin</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup />
-        <SidebarGroup />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild size="lg">
+              <Link href="/dashboard">
+                <LayoutDashboard className="size-4" />
+                <span>Dashboard</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild size="lg">
+              <Link href="/posts">
+                <FileText className="size-4" />
+                <span>Post</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
+        {userProfile?.user.is_superuser && (
+          <NavSecondary items={data.navSecondary} className="mt-auto" />
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
