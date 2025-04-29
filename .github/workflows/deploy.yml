@@ -28,6 +28,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
             cp /var/www/env/admin.env /var/www/website-admin/backend/.env
+            cp /var/www/env/admin.frontend.env /var/www/website-admin/frontend/.env 
             cp /var/www/env/admin.frontend.env /var/www/website-admin/frontend/.env.production 
           EOF
 
