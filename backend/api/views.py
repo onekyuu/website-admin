@@ -21,6 +21,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.pagination import PageNumberPagination
 
+from aliyunsdkcore.client import AcsClient
+from aliyunsdksts.request.v20150401 import AssumeRoleRequest
+from aliyunsdkcore.profile import region_provider
+
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from datetime import datetime
@@ -497,3 +501,56 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
                     )
 
         return Response({"message": "Post updated"}, status=status.HTTP_200_OK)
+
+
+region_provider.modify_point('Sts', 'cn-hangzhou', 'sts.aliyuncs.com')
+
+
+def get_oss_credentials(request):
+    access_key_id = os.getenv('ALIYUN_OSS_ACCESS_KEY_ID')
+    access_key_secret = os.getenv('ALIYUN_OSS_ACCESS_KEY_SECRET')
+    role_arn = os.getenv('OSS_ROLE_ARN')
+    bucket_name = os.getenv('OSS_BUCKET')
+
+    try:
+        client = AcsClient(
+            access_key_id,
+            access_key_secret,
+            'cn-hangzhou',
+            timeout=20
+        )
+
+        request = AssumeRoleRequest.AssumeRoleRequest()
+        request.set_RoleArn(role_arn)
+        request.set_RoleSessionName('django-oss-upload')
+        request.set_DurationSeconds(900)
+
+        policy = {
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": ["oss:PutObject", "oss:GetObject"],
+                "Resource": [f"acs:oss:*:*:{bucket_name}/uploads/*"]
+            }],
+            "Version": "1"
+        }
+        request.set_Policy(json.dumps(policy))
+
+        response = client.do_action_with_exception(request)
+        result = json.loads(response)
+        return JsonResponse({
+            'StatusCode': 200,
+            'AccessKeyId': result['Credentials']['AccessKeyId'],
+            'AccessKeySecret': result['Credentials']['AccessKeySecret'],
+            'SecurityToken': result['Credentials']['SecurityToken'],
+            'Expiration': result['Credentials']['Expiration'],
+            'Region': os.getenv('OSS_REGION'),
+            'Bucket': bucket_name
+        })
+
+    except Exception as e:
+        # 添加详细日志
+        print(f"[ERROR] STS Request Failed: {str(e)}")
+        return JsonResponse(
+            {'error': 'STS Credential Generation Failed', 'detail': str(e)},
+            status=500
+        )

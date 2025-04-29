@@ -12,6 +12,9 @@ import { ImagePlusIcon } from "@/components/tiptap-icons/image-plus-icon";
 // --- UI Primitives ---
 import { Button, ButtonProps } from "@/components/tiptap-ui-primitive/button";
 
+// --- Utilities ---
+import { uploadToOSS } from "@/lib/oss-upload"; // Import the uploadToOSS function
+
 export interface ImageUploadButtonProps extends ButtonProps {
   editor?: Editor | null;
   text?: string;
@@ -47,10 +50,24 @@ export function useImageUploadButton(
   disabled: boolean = false,
 ) {
   const isActive = isImageActive(editor, extensionName);
-  const handleInsertImage = React.useCallback(() => {
-    if (disabled) return false;
-    return insertImage(editor, extensionName);
-  }, [editor, extensionName, disabled]);
+  const handleInsertImage = React.useCallback(
+    async (file: File) => {
+      if (disabled) return false;
+
+      try {
+        // Upload the image to OSS
+        const imageUrl = await uploadToOSS(file);
+
+        // Insert the uploaded image URL into the editor
+        if (editor && imageUrl) {
+          editor.chain().focus().setImage({ src: imageUrl }).run();
+        }
+      } catch (error) {
+        console.error("Image upload failed:", error);
+      }
+    },
+    [editor, extensionName, disabled],
+  );
 
   return {
     isActive,
@@ -83,11 +100,21 @@ export const ImageUploadButton = React.forwardRef<
     );
 
     const handleClick = React.useCallback(
-      (e: React.MouseEvent<HTMLButtonElement>) => {
+      async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
 
         if (!e.defaultPrevented && !disabled) {
-          handleInsertImage();
+          // Trigger file input to select an image
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = "image/*";
+          input.onchange = async () => {
+            const file = input.files?.[0];
+            if (file) {
+              await handleInsertImage(file);
+            }
+          };
+          input.click();
         }
       },
       [onClick, disabled, handleInsertImage],
