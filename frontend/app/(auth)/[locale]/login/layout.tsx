@@ -54,7 +54,7 @@ export default async function LocaleLayout({ children, params }: Props) {
             <NextIntlClientProvider>{children}</NextIntlClientProvider>
           </ThemeProvider>
         </ReactQueryProvider>
-        <Toaster />
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

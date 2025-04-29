@@ -20,6 +20,7 @@ const Login = {
   signUp: "注册",
   signUpSuccess: "注册成功",
   signUpError: "注册失败",
+  signOutSuccess: "登出成功",
 };
 
 export default Login;

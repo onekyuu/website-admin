@@ -14,11 +14,17 @@ const LoginPage: FC = () => {
   const router = useRouter();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn());
   const handleSubmit = async (data: { email: string; password: string }) => {
-    const signInResult = await login(data);
-    if (signInResult) {
-      toast.success(t("signInSuccess"));
+    try {
+      const signInResult = await login(data);
+      console.log("signInResult", signInResult);
+      if (signInResult) {
+        toast.success(t("signInSuccess"));
+      }
+      router.push("/");
+    } catch (error) {
+      console.error("Login failed", error);
+      toast.error(t("signInError"));
     }
-    router.push("/");
   };
 
   useEffect(() => {

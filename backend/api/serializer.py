@@ -75,6 +75,11 @@ class CategorySerializer(serializers.ModelSerializer):
         model = api_models.Category
         fields = ["id", "title", "image", "slug", "post_count"]
 
+    def validate_slug(self, value):
+        if api_models.Category.objects.filter(slug=value).exists():
+            raise serializers.ValidationError("Slug must be unique.")
+        return value
+
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
