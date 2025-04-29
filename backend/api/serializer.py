@@ -90,10 +90,21 @@ class CommentSerializer(serializers.ModelSerializer):
             self.Meta.depth = 1
 
 
+class PostTranslationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.PostTranslation
+        fields = ['id', 'language', 'title', 'description', 'content']
+
+
 class PostSerializer(serializers.ModelSerializer):
+    translations = PostTranslationSerializer(many=True, read_only=True)
+
     class Meta:
         model = api_models.Post
-        fields = "__all__"
+        fields = [
+            'id', 'user', 'profile', 'image', 'slug', 'category',
+            'status', 'views', 'likes', 'date', 'translations'
+        ]
 
     def __init__(self, *args, **kwargs):
         super(PostSerializer, self).__init__(*args, **kwargs)

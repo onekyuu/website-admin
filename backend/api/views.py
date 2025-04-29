@@ -384,41 +384,82 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'title': openapi.Schema(type=openapi.TYPE_STRING),
                 'image': openapi.Schema(type=openapi.TYPE_STRING),
-                'description': openapi.Schema(type=openapi.TYPE_STRING),
                 'tags': openapi.Schema(type=openapi.TYPE_STRING),
                 'category': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'post_status': openapi.Schema(type=openapi.TYPE_STRING),
-                'content': openapi.Schema(type=openapi.TYPE_STRING),
             },
         ),
         responses={201: "Post created successfully"}
     )
     def create(self, request, *args, **kwargs):
+        data = request.data
+
+        user = api_models.User.objects.get(id=data["user_id"])
+        category = api_models.Category.objects.get(id=data["category"])
+
         user_id = request.data.get("user_id")
-        title = request.data.get("title")
         image = request.data.get("image")
-        description = request.data.get("description")
         tags = request.data.get("tags")
         category_id = request.data.get("category")
         post_status = request.data.get("post_status")
-        content = request.data["content"]
 
         user = api_models.User.objects.get(id=user_id)
         category = api_models.Category.objects.get(id=category_id)
 
-        api_models.Post.objects.create(
+        # 1. 创建 Post 主体
+        post = api_models.Post.objects.create(
             user=user,
-            title=title,
             image=image,
-            description=description,
             tags=tags,
             category=category,
             status=post_status,
-            content=content
         )
+
+        # 2. 创建多语言 PostTranslation
+        translations_data = {
+            "zh": data.get("zh"),
+            "en": data.get("en"),
+            "ja": data.get("ja"),
+        }
+
+        for lang_code, translation in translations_data.items():
+            if translation:
+                api_models.PostTranslation.objects.create(
+                    post=post,
+                    language=lang_code,
+                    title=translation.get("title"),
+                    description=translation.get("description"),
+                    content=translation.get("content"),
+                    is_ai_generated=translation.get("is_ai_generated", False)
+                )
+
         return Response({"message": "Post created"}, status=status.HTTP_201_CREATED)
+
+    # def create(self, request, *args, **kwargs):
+    #     user_id = request.data.get("user_id")
+    #     title = request.data.get("title")
+    #     image = request.data.get("image")
+    #     description = request.data.get("description")
+    #     tags = request.data.get("tags")
+    #     category_id = request.data.get("category")
+    #     post_status = request.data.get("post_status")
+    #     content = request.data["content"]
+
+    #     user = api_models.User.objects.get(id=user_id)
+    #     category = api_models.Category.objects.get(id=category_id)
+
+    #     api_models.Post.objects.create(
+    #         user=user,
+    #         title=title,
+    #         image=image,
+    #         description=description,
+    #         tags=tags,
+    #         category=category,
+    #         status=post_status,
+    #         content=content
+    #     )
+    #     return Response({"message": "Post created"}, status=status.HTTP_201_CREATED)
 
 
 class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -438,36 +479,62 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'title': openapi.Schema(type=openapi.TYPE_STRING),
                 'image': openapi.Schema(type=openapi.TYPE_STRING),
-                'description': openapi.Schema(type=openapi.TYPE_STRING),
                 'tags': openapi.Schema(type=openapi.TYPE_STRING),
                 'category': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'post_status': openapi.Schema(type=openapi.TYPE_STRING),
-                'content': openapi.Schema(type=openapi.TYPE_STRING),
             },
         ),
         responses={200: "Post updated successfully"}
     )
     def update(self, request, *args, **kwargs):
+        data = request.data
+
         post_instance = self.get_object()
-        title = request.data.get("title")
-        image = request.data.get("image")
-        description = request.data.get("description")
-        tags = request.data.get("tags")
-        category_id = request.data.get("category")
-        post_status = request.data.get("post_status")
-        content = request.data["content"]
+        image = data.get("image")
+        tags = data.get("tags")
+        category_id = data.get("category")
+        post_status = data.get("post_status")
 
-        category = api_models.Category.objects.get(id=category_id)
-
-        post_instance.title = title
         if image != 'undefined':
             post_instance.image = image
-        post_instance.description = description
         post_instance.tags = tags
-        post_instance.category = category
+        if category_id:
+            category = api_models.Category.objects.get(id=category_id)
+            post_instance.category = category
         post_instance.status = post_status
-        post_instance.content = content
         post_instance.save()
+
+        translations_data = {
+            "zh": data.get("zh"),
+            "en": data.get("en"),
+            "ja": data.get("ja"),
+        }
+        for lang_code, translation in translations_data.items():
+            if translation:
+                try:
+                    post_translation = api_models.PostTranslation.objects.get(
+                        post=post_instance,
+                        language=lang_code
+                    )
+                    # 修改已有的 translation
+                    post_translation.title = translation.get("title")
+                    post_translation.description = translation.get(
+                        "description")
+                    post_translation.content = translation.get("content")
+                    post_translation.is_ai_generated = translation.get(
+                        "is_ai_generated", False)
+                    post_translation.save()
+                except api_models.PostTranslation.DoesNotExist:
+                    # 如果没有对应语言，自动创建一条
+                    api_models.PostTranslation.objects.create(
+                        post=post_instance,
+                        language=lang_code,
+                        title=translation.get("title"),
+                        description=translation.get("description"),
+                        content=translation.get("content"),
+                        is_ai_generated=translation.get(
+                            "is_ai_generated", False),
+                    )
+
         return Response({"message": "Post updated"}, status=status.HTTP_200_OK)
