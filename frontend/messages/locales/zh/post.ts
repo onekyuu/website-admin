@@ -4,7 +4,7 @@ const Post = {
   descriptionPlaceholder: "请输入文章描述",
   descriptionErrorMessage: "描述必须少于100个字符",
   language: "语言",
-  needAIGenerate: "需要AI生成",
+  needAITranslation: "需要AI翻译",
 };
 
 export default Post;

@@ -253,7 +253,7 @@ const PostCreatePage = () => {
                 name="need_ai_generate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("Post.needAIGenerate")}</FormLabel>
+                    <FormLabel>{t("Post.needAITranslation")}</FormLabel>
                     <Switch
                       onCheckedChange={field.onChange}
                       checked={field.value}
