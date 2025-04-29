@@ -20,7 +20,7 @@ jobs:
 
       - name: 📤 Copy project to Aliyun
         run: |
-          rsync -avz --exclude='frontend/.env.production' --delete \
+          rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }}:/var/www/website-admin
 
@@ -28,7 +28,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
             cp /var/www/env/admin.env /var/www/website-admin/backend/.env
-            cp /var/www/env/admin.frontend.env /var/www/website-admin/frontend/.env 
+            cp /var/www/env/admin.frontend.env /var/www/website-admin/frontend/.env.production 
           EOF
 
       - name: 🐳 SSH and deploy both backend & frontend with Docker
