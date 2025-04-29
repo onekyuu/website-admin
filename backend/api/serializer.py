@@ -98,7 +98,8 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostTranslationSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.PostTranslation
-        fields = ['id', 'language', 'title', 'description', 'content']
+        fields = ['id', 'language', 'title',
+                  'description', 'content', 'is_ai_generated']
 
 
 class PostSerializer(serializers.ModelSerializer):

@@ -15,10 +15,24 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
-import { get } from "@/lib/fetcher";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { get, post } from "@/lib/fetcher";
 import { useTranslations } from "next-intl";
 import { DataTable } from "@/components/DataTable";
+import { set, useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { uploadToOSS } from "@/lib/oss-upload"; // Import the uploadToOSS function
+import { toast } from "sonner";
+
 export interface Category {
   id: number;
   title: string;
@@ -28,6 +42,7 @@ export interface Category {
 
 const CategoryPage: FC = () => {
   const t = useTranslations();
+  const [open, setOpen] = React.useState(false);
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: () =>
@@ -59,7 +74,7 @@ const CategoryPage: FC = () => {
               <Image
                 width={60}
                 height={60}
-                src="../../../../public/vercel.svg"
+                src={row.original.image}
                 alt="Image"
                 className="rounded-md object-cover"
               />
@@ -91,35 +106,119 @@ const CategoryPage: FC = () => {
       ),
     },
   ];
+
+  const formSchema = z.object({
+    title: z.string({
+      required_error: t("Post.titleErrorMessage"),
+    }),
+    image: z.string().optional(),
+  });
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      image: "",
+    },
+  });
+
+  const handleCreateCategory = async (data: {
+    title: string;
+    image?: string;
+  }) => {
+    const response = await post<
+      { data: Category },
+      { title: string; image?: string }
+    >("/post/category/create/", data);
+    return response.data;
+  };
+
+  const mutation = useMutation({
+    mutationFn: handleCreateCategory,
+    onSuccess: (data) => {
+      toast.success("创建成功");
+      form.reset();
+      setOpen(false);
+      console.log("User created:", data);
+    },
+    onError: (error) => {
+      toast.error("创建失败");
+      console.error("Error creating user:", error);
+    },
+  });
+
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    console.log("Form data:", data);
+    mutation.mutate(data);
+  };
+
   return (
     <div>
       <div className="mb-8">
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="outline">{t("Category.create")}</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>{t("Category.create")}</DialogTitle>
-              <DialogDescription>Create new Category</DialogDescription>
+              <DialogDescription>
+                {t("Category.createDescription")}
+              </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  {t("Common.title")}
-                </Label>
-                <Input id="name" className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="username" className="text-right">
-                  Username
-                </Label>
-                <Input id="username" value="@peduarte" className="col-span-3" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">Save changes</Button>
-            </DialogFooter>
+            <Form {...form}>
+              <form
+                className="space-y-4"
+                onSubmit={form.handleSubmit(handleSubmit)}
+              >
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("Category.title")}</FormLabel>
+                      <FormControl>
+                        <Input required {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("Category.image")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          id="picture"
+                          type="file"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              try {
+                                const imageUrl = await uploadToOSS(file);
+                                field.onChange(imageUrl);
+                                toast.success(t("Category.imageUploadSuccess"));
+                              } catch (error) {
+                                console.error("Image upload failed:", error);
+                                toast.error(t("Category.imageUploadError"));
+                              }
+                            }
+                          }}
+                          placeholder="Upload an image"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button type="submit">{t("Category.submit")}</Button>
+                </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>

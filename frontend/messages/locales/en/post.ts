@@ -4,7 +4,7 @@ const Post = {
   descriptionPlaceholder: "Input post description",
   descriptionErrorMessage: "Description must be 100 or fewer characters long ",
   language: "Language",
-  needAIGenerate: "Need AI Generate",
+  needAITranslation: "Need AI Translation",
 };
 
 export default Post;
