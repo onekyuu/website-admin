@@ -2,7 +2,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import React, { FC } from "react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,13 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { get, post } from "@/lib/fetcher";
 import { useTranslations } from "next-intl";
 import { DataTable } from "@/components/DataTable";
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -71,12 +69,10 @@ const CategoryPage: FC = () => {
         row.original.image && (
           <div className="w-20">
             <AspectRatio ratio={16 / 9}>
-              <Image
-                width={60}
-                height={60}
+              <img
                 src={row.original.image}
                 alt="Image"
-                className="rounded-md object-cover"
+                className="rounded-md object-cover h-full"
               />
             </AspectRatio>
           </div>

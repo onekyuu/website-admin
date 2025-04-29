@@ -4,7 +4,6 @@ import { get } from "@/lib/fetcher";
 import { useQuery } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import React, { useEffect } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "next-intl";
 import { useImmer } from "use-immer";
@@ -101,12 +100,10 @@ const PostPage = () => {
         row.original.image && (
           <div className="w-20">
             <AspectRatio ratio={16 / 9}>
-              <Image
-                width={60}
-                height={60}
+              <img
                 src={row.original.image}
                 alt="Image"
-                className="rounded-md object-cover"
+                className="rounded-md object-cover h-full"
               />
             </AspectRatio>
           </div>
