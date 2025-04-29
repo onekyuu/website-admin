@@ -28,6 +28,10 @@ shortuuid = "==1.0.11"
 tzdata = "==2023.3"
 sqlparse = "==0.5.3"
 django-cors-headers = "*"
+openai = "*"
+beautifulsoup4 = "*"
+aliyun-python-sdk-core = "*"
+aliyun-python-sdk-sts = "*"
 
 [dev-packages]
 astroid = "==3.3.9"

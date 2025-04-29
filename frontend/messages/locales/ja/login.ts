@@ -20,6 +20,7 @@ const Login = {
   signUp: "サインアップ",
   signUpSuccess: "サインアップに成功しました",
   signUpError: "サインアップに失敗しました",
+  signOutSuccess: "サインアウトに成功しました",
 };
 
 export default Login;

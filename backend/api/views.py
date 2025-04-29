@@ -25,6 +25,11 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from datetime import datetime
 
+from openai import OpenAI
+import os
+import json
+from bs4 import BeautifulSoup
+
 # Others
 import json
 import random
@@ -32,6 +37,12 @@ import random
 # Custom Imports
 from api import models as api_models
 from api import serializer as api_serializer
+
+client = OpenAI(
+    # This is the default and can be omitted
+    api_key=os.environ.get("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com"
+)
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -68,14 +79,9 @@ class IsOwnerOrReadOnly(BasePermission):
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = api_serializer.ProfileSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
-    @swagger_auto_schema(
-        operation_summary="Get or update user profile",
-        request_body=api_serializer.ProfileSerializer,
-        responses={200: api_serializer.ProfileSerializer,
-                   404: "User not found"}
-    )
     def get(self, request, user_id):
         try:
             user = api_models.User.objects.get(id=user_id)
@@ -102,14 +108,15 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
 
 
+class CategoryCreateApiView(generics.CreateAPIView):
+    serializer_class = api_serializer.CategorySerializer
+    permission_classes = [IsAuthenticated]
+
+
 class CategoryListApiView(generics.ListAPIView):
     serializer_class = api_serializer.CategorySerializer
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(
-        operation_summary="Get all categories",
-        responses={200: api_serializer.CategorySerializer(many=True)}
-    )
     def get_queryset(self):
         return api_models.Category.objects.all()
 
@@ -119,10 +126,6 @@ class PostCategoryListApiView(generics.ListAPIView):
     permission_classes = [AllowAny]
     pagination_class = StandardResultsSetPagination
 
-    @swagger_auto_schema(
-        operation_summary="Get posts by category",
-        responses={200: api_serializer.PostSerializer(many=True)}
-    )
     def get_queryset(self):
         category_slug = self.kwargs['category_slug']
         category = api_models.Category.objects.get(slug=category_slug)
@@ -136,10 +139,6 @@ class PostListAPIView(generics.ListAPIView):
     permission_classes = [AllowAny]
     pagination_class = StandardResultsSetPagination
 
-    @swagger_auto_schema(
-        operation_summary="Get all posts",
-        responses={200: api_serializer.PostSerializer(many=True)}
-    )
     def get_queryset(self):
         return api_models.Post.objects.filter(status='Active')
 
@@ -148,10 +147,6 @@ class PostDetailAPIView(generics.RetrieveAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(
-        operation_summary="Get post details",
-        responses={200: api_serializer.PostSerializer}
-    )
     def get_object(self):
         slug = self.kwargs['slug']
         post = api_models.Post.objects.get(slug=slug, status='Active')
@@ -161,17 +156,6 @@ class PostDetailAPIView(generics.RetrieveAPIView):
 
 
 class LikePostAPIView(APIView):
-    @swagger_auto_schema(
-        operation_summary="Like or unlike a post",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'post_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-            },
-        ),
-        responses={200: "Post liked/unliked successfully"}
-    )
     def post(self, request):
         user_id = request.data["user_id"]
         post_id = request.data["post_id"]
@@ -194,19 +178,6 @@ class LikePostAPIView(APIView):
 
 class PostCommentAPIView(APIView):
 
-    @swagger_auto_schema(
-        operation_summary="Add a comment to a post",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'post_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'name': openapi.Schema(type=openapi.TYPE_STRING),
-                'email': openapi.Schema(type=openapi.TYPE_STRING),
-                'comment': openapi.Schema(type=openapi.TYPE_STRING),
-            },
-        ),
-        responses={201: "Comment added successfully"}
-    )
     def post(self, request):
         post_id = request.data["post_id"]
         name = request.data["name"]
@@ -229,17 +200,6 @@ class PostCommentAPIView(APIView):
 
 
 class BookmarkPostAPIView(APIView):
-    @swagger_auto_schema(
-        operation_summary="Bookmark a post",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'post_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-            },
-        ),
-        responses={200: "Post bookmarked successfully"}
-    )
     def post(self, request):
         user_id = request.data["user_id"]
         post_id = request.data["post_id"]
@@ -270,10 +230,6 @@ class DashboradAPIView(generics.ListAPIView):
     serializer_class = api_serializer.AuthorSerializer
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(
-        operation_summary="Get author dashboard stats",
-        responses={200: api_serializer.AuthorSerializer(many=True)}
-    )
     def get_queryset(self):
         user_id = self.kwargs['user_id']
         user = api_models.User.objects.get(id=user_id)
@@ -303,10 +259,6 @@ class DashboardPostLists(generics.ListAPIView):
     permission_classes = [AllowAny]
     pagination_class = StandardResultsSetPagination
 
-    @swagger_auto_schema(
-        operation_summary="Get all posts by user",
-        responses={200: api_serializer.PostSerializer(many=True)}
-    )
     def get_queryset(self):
         user_id = self.kwargs['user_id']
         user = api_models.User.objects.get(id=user_id)
@@ -334,16 +286,7 @@ class DashboardNotificationsList(generics.ListAPIView):
 
 
 class DashboardMarkNotificationAsSeen(APIView):
-    @swagger_auto_schema(
-        operation_summary="Mark notification as seen",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'noti_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-            },
-        ),
-        responses={200: "Notification marked as seen successfully"}
-    )
+
     def post(self, request):
         noti_id = request.data["noti_id"]
         noti = api_models.Notification.objects.get(id=noti_id)
@@ -353,17 +296,7 @@ class DashboardMarkNotificationAsSeen(APIView):
 
 
 class DashboardReplyCommentAPIView(APIView):
-    @swagger_auto_schema(
-        operation_summary="Reply to a comment",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'comment_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'reply': openapi.Schema(type=openapi.TYPE_STRING),
-            },
-        ),
-        responses={200: "Comment replied successfully"}
-    )
+
     def post(self, request):
         comment_id = request.data["comment_id"]
         reply = request.data["reply"]
@@ -374,23 +307,44 @@ class DashboardReplyCommentAPIView(APIView):
         return Response({"message": "Reply added"}, status=status.HTTP_200_OK)
 
 
+def translate_rich_text(html, target_lang, source_lang="zh"):
+    """保留 HTML 结构，只翻译其中的文字内容"""
+    soup = BeautifulSoup(html, "html.parser")
+
+    for tag in soup.find_all(string=True):
+        if tag.strip():  # 只翻译非空字符串
+            try:
+                translated = call_openai_translate(
+                    tag, target_lang, source_lang)
+                tag.replace_with(translated)
+            except Exception as e:
+                print(f"段落翻译失败: {tag[:20]}... -> {e}")
+                continue
+
+    return str(soup)
+
+
+def call_openai_translate(text, target_lang, source_lang="zh"):
+    """使用 DeepSeek 接口翻译"""
+    prompt = f"请将以下文本从{source_lang}翻译为{target_lang}：\n{text}"
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=[
+            {"role": "system", "content": "你是一个精准的翻译助手，只返回翻译后的纯文本，不要解释"},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content.strip()
+
+
 class DashboardPostCreateAPIView(generics.CreateAPIView):
     serializer_class = api_serializer.PostSerializer
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
         operation_summary="Create a new post",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'image': openapi.Schema(type=openapi.TYPE_STRING),
-                'tags': openapi.Schema(type=openapi.TYPE_STRING),
-                'category': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'post_status': openapi.Schema(type=openapi.TYPE_STRING),
-            },
-        ),
-        responses={201: "Post created successfully"}
+        request_body=api_serializer.PostSerializer,
+        responses={201: "Post created successfully", 400: "Bad request"}
     )
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -398,33 +352,32 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
         user = api_models.User.objects.get(id=data["user_id"])
         category = api_models.Category.objects.get(id=data["category"])
 
-        user_id = request.data.get("user_id")
-        image = request.data.get("image")
-        tags = request.data.get("tags")
-        category_id = request.data.get("category")
-        post_status = request.data.get("post_status")
-
-        user = api_models.User.objects.get(id=user_id)
-        category = api_models.Category.objects.get(id=category_id)
-
-        # 1. 创建 Post 主体
         post = api_models.Post.objects.create(
             user=user,
-            image=image,
-            tags=tags,
+            image=data.get("image"),
+            # tags=data.get("tags"),
             category=category,
-            status=post_status,
+            status=data.get("post_status", "Active"),
         )
 
-        # 2. 创建多语言 PostTranslation
         translations_data = {
             "zh": data.get("zh"),
             "en": data.get("en"),
             "ja": data.get("ja"),
         }
+        need_ai_generate = data.get("need_ai_generate", False)
 
-        for lang_code, translation in translations_data.items():
-            if translation:
+        # 有内容的语言作为翻译源
+        available_langs = {
+            k: v for k, v in translations_data.items() if v and v.get("title")}
+        missing_langs = [
+            k for k, v in translations_data.items() if not v or not v.get("title")]
+
+        for lang_code in ["zh", "en", "ja"]:
+            translation = translations_data.get(lang_code)
+
+            if translation and translation.get("title"):
+                # 用户直接提交了翻译，原样保存
                 api_models.PostTranslation.objects.create(
                     post=post,
                     language=lang_code,
@@ -433,33 +386,52 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
                     content=translation.get("content"),
                     is_ai_generated=translation.get("is_ai_generated", False)
                 )
+            else:
+                # AI 自动补全
+                if not available_langs or not need_ai_generate:
+                    continue
 
-        return Response({"message": "Post created"}, status=status.HTTP_201_CREATED)
+                # 用第一个有内容的语言作为源
+                source_lang, source_data = list(available_langs.items())[0]
 
-    # def create(self, request, *args, **kwargs):
-    #     user_id = request.data.get("user_id")
-    #     title = request.data.get("title")
-    #     image = request.data.get("image")
-    #     description = request.data.get("description")
-    #     tags = request.data.get("tags")
-    #     category_id = request.data.get("category")
-    #     post_status = request.data.get("post_status")
-    #     content = request.data["content"]
+                try:
+                    translated_title = call_openai_translate(
+                        source_data["title"], lang_code, source_lang)
+                    translated_description = call_openai_translate(
+                        source_data["description"], lang_code, source_lang)
+                    translated_content = translate_rich_text(
+                        source_data["content"], lang_code, source_lang)
 
-    #     user = api_models.User.objects.get(id=user_id)
-    #     category = api_models.Category.objects.get(id=category_id)
+                    api_models.PostTranslation.objects.create(
+                        post=post,
+                        language=lang_code,
+                        title=translated_title,
+                        description=translated_description,
+                        content=translated_content,
+                        is_ai_generated=True
+                    )
+                except Exception as e:
+                    print(f"[翻译失败] {lang_code}: {str(e)}")
+                    return Response(
+                        {"error": f"翻译失败: {lang_code} - {str(e)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
-    #     api_models.Post.objects.create(
-    #         user=user,
-    #         title=title,
-    #         image=image,
-    #         description=description,
-    #         tags=tags,
-    #         category=category,
-    #         status=post_status,
-    #         content=content
-    #     )
-    #     return Response({"message": "Post created"}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Post created with translations", "post": {
+            "id": post.id,
+            "user": post.user.id,
+            "image": post.image.url if post.image else None,
+            "category": post.category.id,
+            "status": post.status,
+            "translations": [
+                {
+                    "language": translation.language,
+                    "title": translation.title,
+                    "description": translation.description,
+                    "content": translation.content
+                } for translation in post.translations.all()
+            ]
+        }}, status=status.HTTP_201_CREATED)
 
 
 class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -474,19 +446,6 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
         post = api_models.Post.objects.get(id=post_id, user=user)
         return post
 
-    @swagger_auto_schema(
-        operation_summary="Update a post",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'image': openapi.Schema(type=openapi.TYPE_STRING),
-                'tags': openapi.Schema(type=openapi.TYPE_STRING),
-                'category': openapi.Schema(type=openapi.TYPE_INTEGER),
-                'post_status': openapi.Schema(type=openapi.TYPE_STRING),
-            },
-        ),
-        responses={200: "Post updated successfully"}
-    )
     def update(self, request, *args, **kwargs):
         data = request.data
 

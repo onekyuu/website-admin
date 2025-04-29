@@ -1,9 +1,15 @@
+import Category from "./locales/en/category";
+import Common from "./locales/en/common";
 import Header from "./locales/en/header";
 import Login from "./locales/en/login";
 import Menu from "./locales/en/menu";
+import Post from "./locales/en/post";
 
 export default {
+  Common,
   Login,
   Menu,
   Header,
+  Post,
+  Category,
 };

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReactQueryProvider } from "@/lib/react-query";
 import { Toaster } from "@/components/ui/sonner";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Layout from "@/components/Layout";
 import { DelayedFallback } from "@/components/DelayedFallback";
@@ -59,7 +59,6 @@ export default async function LocaleLayout({ children, params }: Props) {
             <NextIntlClientProvider>
               <SidebarProvider>
                 <AppSidebar />
-                <SidebarTrigger />
                 <Layout>
                   <Suspense
                     fallback={
@@ -75,7 +74,7 @@ export default async function LocaleLayout({ children, params }: Props) {
             </NextIntlClientProvider>
           </ThemeProvider>
         </ReactQueryProvider>
-        <Toaster position="top-right" />
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

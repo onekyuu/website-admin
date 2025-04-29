@@ -12,7 +12,7 @@ const Layout: FC<LayoutProps> = ({ children, className }) => {
   return (
     <div className={"min-h-screen w-full flex flex-col"}>
       <Header />
-      <div className={cn(`flex flex-col flex-1 ${className ?? ""}`)}>
+      <div className={cn(`flex flex-col flex-1 px-8 ${className ?? ""}`)}>
         {children}
       </div>
     </div>

@@ -21,6 +21,7 @@ const Login = {
   signUp: "Sign Up",
   signUpSuccess: "Sign up successful",
   signUpError: "Sign up failed",
+  signOutSuccess: "Sign out successful",
 };
 
 export default Login;
