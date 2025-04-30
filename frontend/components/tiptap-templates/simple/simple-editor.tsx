@@ -173,10 +173,12 @@ export function SimpleEditor({
   content,
   onChange,
   extraButtons,
+  editable = true,
 }: {
   content: string;
   onChange?: (content: string) => void;
   extraButtons?: React.ReactNode;
+  editable?: boolean;
 }) {
   const isMobile = useMobile();
   const windowSize = useWindowSize();
@@ -250,6 +252,7 @@ export function SimpleEditor({
       console.log("Editor content:", json);
       onChange?.(JSON.stringify(json));
     },
+    editable,
   });
 
   React.useEffect(() => {
@@ -322,7 +325,7 @@ export function SimpleEditor({
         <EditorContent
           editor={editor}
           role="presentation"
-          className="simple-editor-content"
+          className={"simple-editor-content"}
         />
       </div>
     </EditorContext.Provider>

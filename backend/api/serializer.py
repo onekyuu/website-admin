@@ -51,7 +51,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.User
-        fields = "__all__"
+        fields = fields = ['id', 'username', 'email']
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -103,6 +103,8 @@ class PostTranslationSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    profile = ProfileSerializer(read_only=True)
     translations = PostTranslationSerializer(many=True, read_only=True)
 
     class Meta:

@@ -50,7 +50,7 @@ client = OpenAI(
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 20  # 每页20条
+    page_size = 10  # 每页20条
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -154,7 +154,7 @@ class PostDetailAPIView(generics.RetrieveAPIView):
     def get_object(self):
         slug = self.kwargs['slug']
         post = api_models.Post.objects.get(slug=slug, status='Active')
-        post.view += 1
+        post.views += 1
         post.save()
         return post
 
