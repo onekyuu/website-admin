@@ -8,7 +8,9 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from django.db.models import Sum
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
+
 
 # Restframework
 from rest_framework import status
@@ -231,7 +233,7 @@ class BookmarkPostAPIView(APIView):
 
 
 class DashboradAPIView(generics.ListAPIView):
-    serializer_class = api_serializer.AuthorSerializer
+    serializer_class = api_serializer.DashboardSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
@@ -244,12 +246,43 @@ class DashboradAPIView(generics.ListAPIView):
         likes = api_models.Post.objects.filter(
             user=user).aggregate(total_likes=Sum('likes'))["total_likes"]
         bookmarks = api_models.Bookmark.objects.filter(post__user=user).count()
+        category_counts = (
+            api_models.Category.objects
+            .filter(post__user=user)
+            .annotate(post_count=Count('post'))
+            .values('id', 'title', 'slug', 'post_count')
+        )
+        monthly_posts = (
+            api_models.Post.objects
+            .filter(user=user)
+            .annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
+        popular_posts = (
+            api_models.Post.objects
+            .filter(user=user)
+            .annotate(like_count=Count('likes'))
+            .order_by('-like_count', '-date')[:5]
+            .values('id', 'slug', 'date', 'like_count', 'image')
+        )
+        category_likes = (
+            api_models.Category.objects
+            .filter(post__user=user)
+            .annotate(like_count=Count('post__likes'))
+            .values('title', 'like_count')
+        )
 
         return [{
             "views": views,
             "posts": posts,
             "likes": likes,
             "bookmarks": bookmarks,
+            "categories": category_counts,
+            "category_likes": category_likes,
+            "monthly_posts": monthly_posts,
+            "popular_posts": list(popular_posts),
         }]
 
     def list(self, request, *args, **kwargs):

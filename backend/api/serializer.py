@@ -157,3 +157,40 @@ class AuthorSerializer(serializers.Serializer):
     likes = serializers.IntegerField(default=0)
     comments = serializers.IntegerField(default=0)
     bookmarks = serializers.IntegerField(default=0)
+
+
+class CategoryCountSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    slug = serializers.CharField()
+    post_count = serializers.IntegerField()
+
+
+class MonthlyPostSerializer(serializers.Serializer):
+    month = serializers.DateTimeField()
+    count = serializers.IntegerField()
+
+
+class PopularPostSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    slug = serializers.CharField()
+    date = serializers.DateTimeField()
+    like_count = serializers.IntegerField()
+    image = serializers.CharField()
+
+
+class CategoryLikeSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    like_count = serializers.IntegerField()
+
+
+class DashboardSerializer(serializers.Serializer):
+    views = serializers.IntegerField(default=0)
+    posts = serializers.IntegerField(default=0)
+    likes = serializers.IntegerField(default=0)
+    comments = serializers.IntegerField(default=0)
+    bookmarks = serializers.IntegerField(default=0)
+    categories = CategoryCountSerializer(many=True)
+    monthly_posts = MonthlyPostSerializer(many=True)
+    popular_posts = PopularPostSerializer(many=True)
+    category_likes = CategoryLikeSerializer(many=True)
