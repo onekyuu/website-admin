@@ -1,6 +1,6 @@
 "use client";
-import { ColumnDef } from "@tanstack/react-table";
-import React, { FC } from "react";
+import { ColumnDef, PaginationState } from "@tanstack/react-table";
+import React, { FC, useState } from "react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,11 +41,16 @@ export interface Category {
 const CategoryPage: FC = () => {
   const t = useTranslations();
   const [open, setOpen] = React.useState(false);
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const { data: categories, refetch } = useQuery({
+    queryKey: ["categories", pagination],
     queryFn: () =>
       get<{ id: number; title: string; slug: string; image: string }[]>(
-        `/post/category/list/`,
+        `/post/category/list/?page=${pagination.pageIndex + 1}`,
       ),
   });
 
@@ -84,6 +89,7 @@ const CategoryPage: FC = () => {
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
+            variant={"outline"}
             onClick={() => {
               console.log("Edit", row.original);
             }}
@@ -91,7 +97,7 @@ const CategoryPage: FC = () => {
             Edit
           </Button>
           <Button
-            variant="destructive"
+            variant="outline"
             onClick={() => {
               console.log("Delete", row.original);
             }}
@@ -133,6 +139,7 @@ const CategoryPage: FC = () => {
     mutationFn: handleCreateCategory,
     onSuccess: (data) => {
       toast.success("创建成功");
+      refetch();
       form.reset();
       setOpen(false);
       console.log("User created:", data);

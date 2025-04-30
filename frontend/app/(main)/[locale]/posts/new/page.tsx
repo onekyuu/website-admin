@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import useUserData from "@/hooks/useUserData";
+import { useRouter } from "@/i18n/navigations";
 import { get, post } from "@/lib/fetcher";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -55,6 +56,7 @@ type Post = BasePost & Translations;
 
 const PostCreatePage = () => {
   const t = useTranslations();
+  const router = useRouter();
   const userId = useUserData()?.user_id;
   const [content, setContent] = useState("");
   // const [postData, setPostData] = useImmer({
@@ -110,6 +112,7 @@ const PostCreatePage = () => {
     onSuccess: (data) => {
       toast.success("创建成功");
       console.log("User created:", data);
+      router.push("/posts");
     },
     onError: (error) => {
       toast.error("创建失败");

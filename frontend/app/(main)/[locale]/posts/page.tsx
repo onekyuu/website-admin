@@ -2,32 +2,42 @@
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { get } from "@/lib/fetcher";
 import { useQuery } from "@tanstack/react-query";
-import { ColumnDef } from "@tanstack/react-table";
-import React, { useEffect } from "react";
+import { ColumnDef, PaginationState } from "@tanstack/react-table";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "next-intl";
 import { useImmer } from "use-immer";
 import { Category } from "../category/page";
 import { LocaleType } from "@/app/types";
 import { DataTable } from "@/components/DataTable";
+import { useRouter } from "@/i18n/navigations";
 
-interface Post {
+export interface PostTranslation {
+  id: number;
+  language: LocaleType;
+  title: string;
+  description: string;
+  content: string;
+  is_ai_generated: boolean;
+}
+
+export interface PostData {
   id: number;
   slug: string;
   image: string;
   status: string;
   date: string;
   category: Category;
-  translations: {
+  translations: PostTranslation[];
+  user: {
     id: number;
-    language: LocaleType;
-    title: string;
-    description: string;
-    content: string;
-  }[];
+    username: string;
+    email: string;
+    image: string;
+  };
 }
 
-type PostListItem = Post & {
+type PostListItem = PostData & {
   title?: string;
   description?: string;
   content?: string;
@@ -36,9 +46,18 @@ type PostListItem = Post & {
 
 const PostPage = () => {
   const locale = useLocale() as LocaleType;
-  const { data } = useQuery({
-    queryKey: ["post-list"],
-    queryFn: () => get<{ results: Post[] }>(`/post/lists/`),
+  const router = useRouter();
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const { data, refetch } = useQuery({
+    queryKey: ["post-list", pagination],
+    queryFn: () =>
+      get<{ count: number; results: PostData[] }>(
+        `/post/lists/?page=${pagination.pageIndex + 1}`,
+      ),
   });
   const [posts, setPosts] = useImmer<PostListItem[]>([]);
 
@@ -72,6 +91,11 @@ const PostPage = () => {
     {
       accessorKey: "slug",
       header: "Slug",
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => row.original.category.title,
     },
     {
       accessorKey: "status",
@@ -115,6 +139,17 @@ const PostPage = () => {
       cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
+            size={"sm"}
+            variant={"outline"}
+            onClick={() => {
+              router.push(`/posts/${row.original.slug}/detail`);
+            }}
+          >
+            Detail
+          </Button>
+          <Button
+            size={"sm"}
+            variant={"outline"}
             onClick={() => {
               console.log("Edit", row.original);
             }}
@@ -122,7 +157,8 @@ const PostPage = () => {
             Edit
           </Button>
           <Button
-            variant="destructive"
+            size={"sm"}
+            variant="outline"
             onClick={() => {
               console.log("Delete", row.original);
             }}
@@ -136,7 +172,13 @@ const PostPage = () => {
 
   return (
     <div>
-      <DataTable columns={columns} data={posts} />
+      <DataTable
+        columns={columns}
+        data={posts}
+        pagination={pagination}
+        rowCount={data?.count || 0}
+        onPaginationChange={setPagination}
+      />
     </div>
   );
 };
