@@ -171,6 +171,11 @@ class MonthlyPostSerializer(serializers.Serializer):
     count = serializers.IntegerField()
 
 
+class DailyPostSerializer(serializers.Serializer):
+    day = serializers.DateTimeField()
+    count = serializers.IntegerField()
+
+
 class PopularPostSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     slug = serializers.CharField()
@@ -194,3 +199,4 @@ class DashboardSerializer(serializers.Serializer):
     monthly_posts = MonthlyPostSerializer(many=True)
     popular_posts = PopularPostSerializer(many=True)
     category_likes = CategoryLikeSerializer(many=True)
+    daily_posts = DailyPostSerializer(many=True)

@@ -9,7 +9,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth, TruncDay
+from django.utils import timezone
 
 
 # Restframework
@@ -29,7 +30,10 @@ from aliyunsdkcore.profile import region_provider
 
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from dateutil.relativedelta import relativedelta
+
 
 from openai import OpenAI
 import os
@@ -232,62 +236,84 @@ class BookmarkPostAPIView(APIView):
             return Response({"message": "Post bookmarked"}, status=status.HTTP_201_CREATED)
 
 
-class DashboradAPIView(generics.ListAPIView):
-    serializer_class = api_serializer.DashboardSerializer
+class DashboradAPIView(APIView):
     permission_classes = [AllowAny]
 
-    def get_queryset(self):
-        user_id = self.kwargs['user_id']
-        user = api_models.User.objects.get(id=user_id)
+    def get_monthly_post_counts(self, user):
+        # 生成近12个月月份
+        end_date = datetime.today().replace(day=1)
+        months = [end_date - relativedelta(months=i)
+                  for i in range(11, -1, -1)]
+        month_labels = [m.strftime('%Y-%m') for m in months]
 
-        views = api_models.Post.objects.filter(
-            user=user).aggregate(view=Sum('views'))["view"]
-        posts = api_models.Post.objects.filter(user=user).count()
-        likes = api_models.Post.objects.filter(
-            user=user).aggregate(total_likes=Sum('likes'))["total_likes"]
-        bookmarks = api_models.Bookmark.objects.filter(post__user=user).count()
-        category_counts = (
-            api_models.Category.objects
-            .filter(post__user=user)
-            .annotate(post_count=Count('post'))
-            .values('id', 'title', 'slug', 'post_count')
-        )
-        monthly_posts = (
+        # 实际数据
+        raw_data = (
             api_models.Post.objects
-            .filter(user=user)
+            .filter(user=user, date__gte=months[0])
             .annotate(month=TruncMonth('date'))
             .values('month')
             .annotate(count=Count('id'))
-            .order_by('month')
-        )
-        popular_posts = (
-            api_models.Post.objects
-            .filter(user=user)
-            .annotate(like_count=Count('likes'))
-            .order_by('-like_count', '-date')[:5]
-            .values('id', 'slug', 'date', 'like_count', 'image')
-        )
-        category_likes = (
-            api_models.Category.objects
-            .filter(post__user=user)
-            .annotate(like_count=Count('post__likes'))
-            .values('title', 'like_count')
         )
 
-        return [{
+        stats_dict = {item['month'].strftime(
+            '%Y-%m'): item['count'] for item in raw_data}
+
+        return [
+            {"month": month, "count": stats_dict.get(month, 0)}
+            for month in month_labels
+        ]
+
+    def get(self, request, user_id):
+        user = api_models.User.objects.get(id=user_id)
+
+        views = api_models.Post.objects.filter(
+            user=user).aggregate(view=Sum('views'))["view"] or 0
+        posts = api_models.Post.objects.filter(user=user).count()
+        likes = api_models.Post.objects.filter(user=user).aggregate(
+            total_likes=Count('likes'))["total_likes"] or 0
+        bookmarks = api_models.Bookmark.objects.filter(post__user=user).count()
+
+        category_counts = list(api_models.Category.objects
+                               .filter(post__user=user)
+                               .annotate(post_count=Count('post'))
+                               .values('id', 'title', 'slug', 'post_count'))
+
+        monthly_posts = self.get_monthly_post_counts(user)
+
+        popular_posts = list(api_models.Post.objects
+                             .filter(user=user)
+                             .annotate(like_count=Count('likes'))
+                             .order_by('-like_count', '-date')[:5]
+                             .values('id', 'slug', 'date', 'like_count', 'image'))
+
+        category_likes = list(api_models.Category.objects
+                              .filter(post__user=user)
+                              .annotate(like_count=Count('post__likes'))
+                              .values('title', 'like_count'))
+        one_year_ago = timezone.now() - timedelta(days=365)
+        daily_posts = list(
+            api_models.Post.objects
+            .filter(user=user, date__gte=one_year_ago)
+            .annotate(day=TruncDay('date'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+
+        data = {
             "views": views,
             "posts": posts,
             "likes": likes,
+            "comments": 0,  # 如果之后加上评论模型可以再统计
             "bookmarks": bookmarks,
             "categories": category_counts,
-            "category_likes": category_likes,
             "monthly_posts": monthly_posts,
-            "popular_posts": list(popular_posts),
-        }]
+            "popular_posts": popular_posts,
+            "category_likes": category_likes,
+            "daily_posts": daily_posts,
+        }
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = api_serializer.DashboardSerializer(data)
         return Response(serializer.data)
 
 

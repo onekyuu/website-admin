@@ -32,6 +32,7 @@ openai = "*"
 beautifulsoup4 = "*"
 aliyun-python-sdk-core = "*"
 aliyun-python-sdk-sts = "*"
+python-dateutil = "*"
 
 [dev-packages]
 astroid = "==3.3.9"
