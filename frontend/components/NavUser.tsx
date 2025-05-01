@@ -96,7 +96,7 @@ export function NavUser({ user }: { user: NavUserProps }) {
                 onClick={async () => {
                   await logout();
                   router.push("/login");
-                  toast.success(t("signOutSuccess"));
+                  toast.success(t("Login.signOutSuccess"));
                 }}
               >
                 {t("Header.signOut")}

@@ -11,6 +11,7 @@ from django.utils.encoding import force_bytes
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth, TruncDay
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 
 
 # Restframework
@@ -116,6 +117,18 @@ class ProfileView(generics.RetrieveUpdateAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except (api_models.User.DoesNotExist, api_models.Profile.DoesNotExist):
             return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request, user_id):
+        user = get_object_or_404(api_models.User, id=user_id)
+        profile = get_object_or_404(api_models.Profile, user=user)
+        self.check_object_permissions(request, profile)
+
+        serializer = self.get_serializer(
+            profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CategoryCreateApiView(generics.CreateAPIView):

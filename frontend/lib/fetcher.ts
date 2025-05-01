@@ -147,3 +147,21 @@ export async function post<T, D>(
     body: data ? JSON.stringify(data) : undefined,
   });
 }
+
+/**
+ * 封装 PATCH 请求
+ * @param endpoint API 路径（不需要包含 base URL）
+ * @param data 请求体数据（会自动序列化成 JSON）
+ * @param options 额外的 fetch 配置
+ */
+export async function patch<T, D>(
+  endpoint: string,
+  data?: D,
+  options?: RequestInit,
+): Promise<T> {
+  return fetcher<T>(endpoint, {
+    ...options,
+    method: "PATCH",
+    body: data ? JSON.stringify(data) : undefined,
+  });
+}
