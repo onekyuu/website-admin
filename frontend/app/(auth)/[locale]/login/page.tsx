@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { FC, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/auth";
+import { Boxes } from "lucide-react";
 
 const LoginPage: FC = () => {
   const t = useTranslations("Login");
@@ -34,11 +35,28 @@ const LoginPage: FC = () => {
     }
   }, [isLoggedIn, router]);
   return (
-    <Layout>
-      <div className="flex items-center justify-center">
+    <div className="flex flex-1 items-center h-full w-full">
+      <div className="w-md h-dvh bg-[var(--color-background-2)] grid place-items-center text-left relative">
+        <div className="col-span-4 space-y-4 text-left absolute top-8 left-8 ">
+          <div className="text-xl flex items-center gap-2">
+            <Boxes size={"30px"} />
+            SEELE-ADMIN
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="text-3xl">Admin</div>
+          <div className="text-xl">for Onekyuu&apos;s Website</div>
+        </div>
+        <footer className="absolute bottom-4 text-sm text-[var(--color-gray-500)]">
+          &copy; {new Date().getFullYear()} Onekyuu. All rights reserved.
+        </footer>
+      </div>
+      <div className="flex flex-1 items-center justify-center h-full">
         <LoginForm onSubmit={handleSubmit} />
       </div>
-    </Layout>
+    </div>
+    // <Layout className="h-full">
+    // </Layout>
   );
 };
 
