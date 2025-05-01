@@ -34,11 +34,7 @@ import { useTranslations } from "next-intl";
 export function AppSidebar() {
   const t = useTranslations();
   const userId = useUserData()?.user_id;
-  const {
-    data: userProfile,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: userProfile } = useQuery({
     queryKey: ["posts"],
     queryFn: () =>
       get<{
@@ -50,8 +46,6 @@ export function AppSidebar() {
         };
       }>(`/user/profile/${userId}/`),
   });
-  console.log("isLoading", isLoading);
-  console.log("error", error);
 
   const navUser = useMemo(
     () => ({

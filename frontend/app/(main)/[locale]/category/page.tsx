@@ -151,7 +151,6 @@ const CategoryPage: FC = () => {
   });
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
-    console.log("Form data:", data);
     mutation.mutate(data);
   };
 
