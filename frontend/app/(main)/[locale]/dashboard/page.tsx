@@ -79,14 +79,14 @@ export default function Dashboard() {
   const chartConfig = {
     count: {
       label: "Posts",
-      color: "var(--color-primary-200)",
+      color: "var(--color-primary-700)",
     },
   } satisfies ChartConfig;
 
   return (
     <div className="w-full">
       <div className="grid grid-cols-6 gap-4 auto-rows-auto mt-8">
-        <div className="col-span-6 row-span-1 py-4">
+        <div className="col-span-4 row-span-1 py-4">
           <CalendarHeatmap
             startDate={dayjs().subtract(365, "day").format("YYYY/MM/DD")}
             endDate={dayjs().format("YYYY/MM/DD")}
@@ -98,19 +98,19 @@ export default function Dashboard() {
             }
             classForValue={(value) => {
               if (!value) {
-                return "color-empty rounded-sm";
+                return "color-empty rect";
               }
               switch (value.count) {
                 case 0:
-                  return "color-empty rounded-sm";
+                  return "color-empty rect";
                 case 1 <= value.count && value.count <= 3:
-                  return "color-scale-low rounded-sm";
+                  return "color-scale-low rect";
                 case 4 <= value.count && value.count <= 7:
-                  return "color-scale-mid rounded-sm";
+                  return "color-scale-mid rect";
                 case 8 <= value.count && value.count <= 10:
-                  return "color-scale-high rounded-sm";
+                  return "color-scale-high rect";
                 default:
-                  return "color-scale-highest rounded-sm";
+                  return "color-scale-highest rect";
               }
             }}
           />
