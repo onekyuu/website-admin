@@ -86,6 +86,14 @@ export default function Dashboard() {
     return data?.categories.length || 0;
   }, [data?.categories]);
 
+  const COLORS = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
+  ];
+
   const chartConfig = {
     count: {
       label: "Posts",
@@ -93,24 +101,36 @@ export default function Dashboard() {
     },
   } satisfies ChartConfig;
 
+  const categoryChartData =
+    data?.categories.map((item, index) => ({
+      title: item.title,
+      slug: item.slug,
+      count: item.post_count,
+      fill: COLORS[index % COLORS.length],
+    })) || [];
+
+  const categoryChartConfig =
+    data?.categories.reduce((acc, item, index) => {
+      acc[item.slug] = {
+        label: item.title,
+        color: COLORS[index % COLORS.length],
+      };
+      return acc;
+    }, {} as ChartConfig) || {};
+
   const renderRectClass = (
     value: ReactCalendarHeatmapValue<string> | undefined,
   ) => {
-    if (!value) {
-      return "color-empty";
-    }
-    switch (value.count) {
-      case 0:
-        return "color-empty";
-      case 1 <= value.count && value.count <= 3:
-        return "color-scale-low";
-      case 4 <= value.count && value.count <= 7:
-        return "color-scale-mid";
-      case 8 <= value.count && value.count <= 10:
-        return "color-scale-high";
-      default:
-        return "color-scale-highest";
-    }
+    const thresholds = [
+      { max: 0, className: "color-empty" },
+      { max: 4, className: "color-scale-low" },
+      { max: 8, className: "color-scale-mid" },
+      { max: 12, className: "color-scale-high" },
+    ];
+
+    const count = value?.count ?? 0;
+    const matched = thresholds.find((t) => count <= t.max);
+    return matched ? matched.className : "color-scale-highest";
   };
 
   const renderRectElement = (
@@ -178,7 +198,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
-              config={chartConfig}
+              config={categoryChartConfig}
               className="mx-auto aspect-square max-h-[260px]"
             >
               <PieChart>
@@ -187,8 +207,8 @@ export default function Dashboard() {
                   content={<ChartTooltipContent hideLabel />}
                 />
                 <Pie
-                  data={data?.categories}
-                  dataKey="post_count"
+                  data={categoryChartData}
+                  dataKey="count"
                   nameKey="title"
                   innerRadius={60}
                   strokeWidth={5}

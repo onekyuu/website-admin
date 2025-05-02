@@ -163,6 +163,13 @@
     var(--color-primary-200) 50%,
     var(--color-secondary-300) 100%
   );
+
+  --chart-1: 221.2 83.2% 53.3%;
+  --chart-2: 212 95% 68%;
+  --chart-3: 216 92% 60%;
+  --chart-4: 210 98% 78%;
+  --chart-5: 212 97% 87%;
+
   .react-calendar-heatmap .color-scale-low {
     fill: var(--color-primary-300);
   }
@@ -212,6 +219,11 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --chart-1: 221.2 83.2% 53.3%;
+  --chart-2: 212 95% 68%;
+  --chart-3: 216 92% 60%;
+  --chart-4: 210 98% 78%;
+  --chart-5: 212 97% 87%;
 
   .react-calendar-heatmap .color-empty {
     fill: var(--card);
