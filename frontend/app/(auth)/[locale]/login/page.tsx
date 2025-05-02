@@ -1,6 +1,5 @@
 "use client";
 
-import Layout from "@/components/Layout";
 import LoginForm from "@/components/LoginForm";
 import { useRouter } from "@/i18n/navigations";
 import { login } from "@/lib/auth";
@@ -9,6 +8,7 @@ import { FC, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/auth";
 import { Boxes } from "lucide-react";
+import dayjs from "dayjs";
 
 const LoginPage: FC = () => {
   const t = useTranslations("Login");
@@ -48,7 +48,7 @@ const LoginPage: FC = () => {
           <div className="text-xl">for Onekyuu&apos;s Website</div>
         </div>
         <footer className="absolute bottom-4 text-sm text-[var(--color-gray-500)]">
-          &copy; {new Date().getFullYear()} Onekyuu. All rights reserved.
+          &copy; {dayjs().year()} Onekyuu. All rights reserved.
         </footer>
       </div>
       <div className="flex flex-1 items-center justify-center h-full">

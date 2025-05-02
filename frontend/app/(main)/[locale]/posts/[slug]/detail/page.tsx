@@ -10,6 +10,7 @@ import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor
 import { LocaleType } from "@/app/types";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import dayjs from "dayjs";
 
 const PostDetailPage: FC = () => {
   const params = useParams();
@@ -49,7 +50,7 @@ const PostDetailPage: FC = () => {
                 @{data?.user.username}
               </div>
             )}
-            {data && <div>{new Date(data?.date).toLocaleDateString()}</div>}
+            {data && <div>{dayjs(data.date).format("YYYY-MM-DD")}</div>}
           </div>
           <div className="text-3xl">{postData?.title}</div>
           <div className="text-(--color-gray-500)">{postData?.description}</div>

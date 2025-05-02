@@ -11,6 +11,7 @@ import { Category } from "../category/page";
 import { LocaleType } from "@/app/types";
 import { DataTable } from "@/components/DataTable";
 import { useRouter } from "@/i18n/navigations";
+import dayjs from "dayjs";
 
 export interface PostTranslation {
   id: number;
@@ -104,18 +105,9 @@ const PostPage = () => {
     {
       accessorKey: "date",
       header: "Date",
-      cell: ({ row }) => {
-        const date = new Date(row.original.date);
-        return (
-          <div>
-            {date.toLocaleDateString(locale, {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-            })}
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <div>{dayjs(row.original.date).format("YYYY-MM-DD")}</div>
+      ),
     },
     {
       accessorKey: "image",

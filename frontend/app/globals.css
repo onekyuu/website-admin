@@ -254,3 +254,6 @@
 .react-calendar-heatmap .color-empty {
   fill: var(--color-background-1);
 }
+.react-calendar-heatmap .rect {
+  border-radius: var(--radius);
+}
