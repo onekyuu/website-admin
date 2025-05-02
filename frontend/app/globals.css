@@ -163,6 +163,21 @@
     var(--color-primary-200) 50%,
     var(--color-secondary-300) 100%
   );
+  .react-calendar-heatmap .color-scale-low {
+    fill: var(--color-primary-300);
+  }
+  .react-calendar-heatmap .color-scale-mid {
+    fill: var(--color-primary-400);
+  }
+  .react-calendar-heatmap .color-scale-high {
+    fill: var(--color-primary-500);
+  }
+  .react-calendar-heatmap .color-scale-highest {
+    fill: var(--color-primary-600);
+  }
+  .react-calendar-heatmap .color-empty {
+    fill: var(--color-background-1);
+  }
 }
 
 .dark {
@@ -197,6 +212,10 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+
+  .react-calendar-heatmap .color-empty {
+    fill: var(--card);
+  }
 }
 
 @layer base {
@@ -239,21 +258,6 @@
   background-position: center;
 }
 
-.react-calendar-heatmap .color-scale-low {
-  fill: var(--color-primary-300);
-}
-.react-calendar-heatmap .color-scale-mid {
-  fill: var(--color-primary-400);
-}
-.react-calendar-heatmap .color-scale-high {
-  fill: var(--color-primary-500);
-}
-.react-calendar-heatmap .color-scale-highest {
-  fill: var(--color-primary-600);
-}
-.react-calendar-heatmap .color-empty {
-  fill: var(--color-background-1);
-}
 .react-calendar-heatmap .rect {
   border-radius: var(--radius);
 }

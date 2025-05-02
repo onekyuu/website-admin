@@ -17,7 +17,14 @@ import useUserData from "@/hooks/useUserData";
 import { get } from "@/lib/fetcher";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  ReactElement,
+  ReactNode,
+  SVGProps,
+  useMemo,
+} from "react";
 import {
   Bar,
   BarChart,
@@ -28,7 +35,10 @@ import {
   XAxis,
 } from "recharts";
 import dayjs from "dayjs";
-import CalendarHeatmap from "react-calendar-heatmap";
+import CalendarHeatmap, {
+  ReactCalendarHeatmapValue,
+} from "react-calendar-heatmap";
+import { getRecentYearRange } from "@/lib/date-format";
 
 export type DashboardData = {
   views: number;
@@ -83,6 +93,41 @@ export default function Dashboard() {
     },
   } satisfies ChartConfig;
 
+  const renderRectClass = (
+    value: ReactCalendarHeatmapValue<string> | undefined,
+  ) => {
+    if (!value) {
+      return "color-empty";
+    }
+    switch (value.count) {
+      case 0:
+        return "color-empty";
+      case 1 <= value.count && value.count <= 3:
+        return "color-scale-low";
+      case 4 <= value.count && value.count <= 7:
+        return "color-scale-mid";
+      case 8 <= value.count && value.count <= 10:
+        return "color-scale-high";
+      default:
+        return "color-scale-highest";
+    }
+  };
+
+  const renderRectElement = (
+    element: SVGProps<SVGRectElement>,
+    value: ReactCalendarHeatmapValue<string> | undefined,
+    index: number,
+  ): ReactNode => {
+    if (isValidElement(element) && element.type === "rect") {
+      return cloneElement(element as ReactElement<SVGProps<SVGRectElement>>, {
+        rx: 3,
+        ry: 3,
+        key: value?.date || index,
+      });
+    }
+    return element as ReactElement<SVGProps<SVGRectElement>>;
+  };
+
   return (
     <div className="w-full">
       <div className="grid grid-cols-6 gap-4 auto-rows-auto mt-8">
@@ -96,29 +141,17 @@ export default function Dashboard() {
                 count: item.count,
               })) || []
             }
-            classForValue={(value) => {
-              if (!value) {
-                return "color-empty rect";
-              }
-              switch (value.count) {
-                case 0:
-                  return "color-empty rect";
-                case 1 <= value.count && value.count <= 3:
-                  return "color-scale-low rect";
-                case 4 <= value.count && value.count <= 7:
-                  return "color-scale-mid rect";
-                case 8 <= value.count && value.count <= 10:
-                  return "color-scale-high rect";
-                default:
-                  return "color-scale-highest rect";
-              }
-            }}
+            classForValue={renderRectClass}
+            transformDayElement={renderRectElement}
+            titleForValue={(value) =>
+              value ? `${value.count} posts on ${value.date}` : ""
+            }
           />
         </div>
         <Card className="col-span-4 row-span-1">
           <CardHeader className="items-center pb-0">
             <CardTitle>Recent 1 year Posts</CardTitle>
-            <CardDescription>January - June 2024</CardDescription>
+            <CardDescription>{getRecentYearRange()}</CardDescription>
           </CardHeader>
           <ChartContainer config={chartConfig} className="max-h-[260px] h-auto">
             <BarChart accessibilityLayer data={data?.monthly_posts}>
@@ -141,7 +174,7 @@ export default function Dashboard() {
         <Card className="col-span-2 row-span-1">
           <CardHeader className="items-center pb-0">
             <CardTitle>All Categories</CardTitle>
-            <CardDescription>January - June 2024</CardDescription>
+            <CardDescription>{getRecentYearRange()}</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
