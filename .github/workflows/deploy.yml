@@ -41,7 +41,12 @@ jobs:
               
               cd /var/www/website-admin
               sudo docker compose down || true
-              sudo docker compose up -d --build
+
+              echo "🐳 Building Docker images..."
+              sudo docker compose build --progress=plain
+
+              echo "🚀 Starting containers..."
+              sudo docker compose up -d
 
               echo "⏳ Waiting for containers to initialize..."
               sleep 10
