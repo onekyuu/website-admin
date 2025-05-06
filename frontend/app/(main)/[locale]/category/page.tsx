@@ -1,58 +1,100 @@
 "use client";
-import { ColumnDef, PaginationState } from "@tanstack/react-table";
-import React, { FC, useState } from "react";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { ColumnDef } from "@tanstack/react-table";
+import React, { FC } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { get, post } from "@/lib/fetcher";
+import { get, patch, post } from "@/lib/fetcher";
 import { useTranslations } from "next-intl";
 import { DataTable } from "@/components/DataTable";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { uploadToOSS } from "@/lib/oss-upload"; // Import the uploadToOSS function
 import { toast } from "sonner";
-
-export interface Category {
-  id: number;
-  title: string;
-  slug: string;
-  image: string;
-}
+import Image from "next/image";
+import CategoryDialog, { Category } from "@/components/CategoryDialog";
 
 const CategoryPage: FC = () => {
   const t = useTranslations();
-  const [open, setOpen] = React.useState(false);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
 
   const { data: categories, refetch } = useQuery({
-    queryKey: ["categories", pagination],
+    queryKey: ["categories"],
     queryFn: () =>
       get<{ id: number; title: string; slug: string; image: string }[]>(
-        `/post/category/list/?page=${pagination.pageIndex + 1}`,
+        `/post/category/list/`,
       ),
   });
+
+  const handleCreateCategory = async (data: {
+    title: string;
+    image?: string;
+  }) => {
+    const response = await post<
+      { data: Category },
+      { title: string; image?: string }
+    >("/post/category/create/", data);
+    return response.data;
+  };
+
+  const mutation = useMutation({
+    mutationFn: handleCreateCategory,
+    onSuccess: (data) => {
+      toast.success("创建成功");
+      refetch();
+      console.log("User created:", data);
+    },
+    onError: (error) => {
+      toast.error("创建失败");
+      console.error("Error creating user:", error);
+    },
+  });
+
+  const handleEditCategory = async (data: {
+    id: number;
+    title: string;
+    image?: string;
+  }) => {
+    const { id, ...updateData } = data;
+    const response = await patch<
+      { data: Category },
+      { title: string; image?: string }
+    >(`/post/category/update/${id}/`, updateData);
+    return response.data;
+  };
+
+  const editMutation = useMutation({
+    mutationFn: handleEditCategory,
+    onSuccess: (data) => {
+      toast.success(t("Category.editSuccess"));
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(t("Category.editError"));
+      console.error("Error updating category:", error);
+    },
+  });
+
+  const handleCreateSubmit = async (
+    data: Category | { title: string; image?: string },
+  ) => {
+    mutation.mutate(data);
+  };
+
+  const handleEditSubmit = async (
+    data: Category | { title: string; image?: string },
+  ) => {
+    editMutation.mutate(data as Category);
+  };
+
+  const createDialog = () => (
+    <CategoryDialog mode="create" handleSubmit={handleCreateSubmit} />
+  );
+
+  const editDialog = (data: Category) => {
+    return (
+      <CategoryDialog
+        mode="edit"
+        categoryToEdit={data}
+        handleSubmit={handleEditSubmit}
+      />
+    );
+  };
 
   const columns: ColumnDef<Category>[] = [
     {
@@ -73,13 +115,14 @@ const CategoryPage: FC = () => {
       cell: ({ row }) =>
         row.original.image && (
           <div className="w-20">
-            <AspectRatio ratio={16 / 9}>
-              <img
-                src={row.original.image}
-                alt="Image"
-                className="rounded-md object-cover h-full"
-              />
-            </AspectRatio>
+            <Image
+              width={40}
+              height={40}
+              src={row.original.image}
+              alt="Image"
+              className="rounded-md object-cover h-full"
+              unoptimized
+            />
           </div>
         ),
     },
@@ -88,14 +131,7 @@ const CategoryPage: FC = () => {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button
-            variant={"outline"}
-            onClick={() => {
-              console.log("Edit", row.original);
-            }}
-          >
-            Edit
-          </Button>
+          {editDialog(row.original)}
           <Button
             variant="outline"
             onClick={() => {
@@ -109,121 +145,9 @@ const CategoryPage: FC = () => {
     },
   ];
 
-  const formSchema = z.object({
-    title: z.string({
-      required_error: t("Post.titleErrorMessage"),
-    }),
-    image: z.string().optional(),
-  });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      image: "",
-    },
-  });
-
-  const handleCreateCategory = async (data: {
-    title: string;
-    image?: string;
-  }) => {
-    const response = await post<
-      { data: Category },
-      { title: string; image?: string }
-    >("/post/category/create/", data);
-    return response.data;
-  };
-
-  const mutation = useMutation({
-    mutationFn: handleCreateCategory,
-    onSuccess: (data) => {
-      toast.success("创建成功");
-      refetch();
-      form.reset();
-      setOpen(false);
-      console.log("User created:", data);
-    },
-    onError: (error) => {
-      toast.error("创建失败");
-      console.error("Error creating user:", error);
-    },
-  });
-
-  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
-    mutation.mutate(data);
-  };
-
   return (
     <div>
-      <div className="mb-8">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">{t("Category.create")}</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>{t("Category.create")}</DialogTitle>
-              <DialogDescription>
-                {t("Category.createDescription")}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                className="space-y-4"
-                onSubmit={form.handleSubmit(handleSubmit)}
-              >
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Category.title")}</FormLabel>
-                      <FormControl>
-                        <Input required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="image"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Category.image")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="picture"
-                          type="file"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              try {
-                                const imageUrl = await uploadToOSS(file);
-                                field.onChange(imageUrl);
-                                toast.success(t("Category.imageUploadSuccess"));
-                              } catch (error) {
-                                console.error("Image upload failed:", error);
-                                toast.error(t("Category.imageUploadError"));
-                              }
-                            }
-                          }}
-                          placeholder="Upload an image"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end space-x-2">
-                  <Button type="submit">{t("Category.submit")}</Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <div className="mb-8">{createDialog()}</div>
       <DataTable columns={columns} data={categories || []} />
     </div>
   );

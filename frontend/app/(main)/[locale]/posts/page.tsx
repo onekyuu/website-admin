@@ -7,11 +7,11 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "next-intl";
 import { useImmer } from "use-immer";
-import { Category } from "../category/page";
 import { LocaleType } from "@/app/types";
 import { DataTable } from "@/components/DataTable";
 import { useRouter } from "@/i18n/navigations";
 import dayjs from "dayjs";
+import { Category } from "@/components/CategoryDialog";
 
 export interface PostTranslation {
   id: number;
@@ -108,22 +108,6 @@ const PostPage = () => {
       cell: ({ row }) => (
         <div>{dayjs(row.original.date).format("YYYY-MM-DD")}</div>
       ),
-    },
-    {
-      accessorKey: "image",
-      header: "Image",
-      cell: ({ row }) =>
-        row.original.image && (
-          <div className="w-20">
-            <AspectRatio ratio={16 / 9}>
-              <img
-                src={row.original.image}
-                alt="Image"
-                className="rounded-md object-cover h-full"
-              />
-            </AspectRatio>
-          </div>
-        ),
     },
     {
       id: "actions",

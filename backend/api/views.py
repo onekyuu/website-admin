@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth, TruncDay
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -135,6 +135,33 @@ class CategoryCreateApiView(generics.CreateAPIView):
     serializer_class = api_serializer.CategorySerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        # 将当前登录用户设置为创建者
+        serializer.save(user=self.request.user)
+
+
+class CategoryUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = api_serializer.CategorySerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]  # 确保只有创建者可以修改
+
+    def get_object(self):
+        category_id = self.kwargs['category_id']
+        return get_object_or_404(api_models.Category, id=category_id)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # 执行自定义逻辑，例如检查是否有关联的文章
+        posts_count = api_models.Post.objects.filter(category=instance).count()
+        if posts_count > 0:
+            return Response(
+                {"error": f"无法删除，该分类下还有 {posts_count} 篇文章。"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 执行删除操作
+        self.perform_destroy(instance)
+        return Response({"message": "分类已成功删除"}, status=status.HTTP_204_NO_CONTENT)
+
 
 class CategoryListApiView(generics.ListAPIView):
     serializer_class = api_serializer.CategorySerializer
@@ -254,7 +281,7 @@ class DashboradAPIView(APIView):
 
     def get_monthly_post_counts(self, user):
         # 生成近12个月月份
-        end_date = datetime.today().replace(day=1)
+        end_date = timezone.now().replace(day=1)
         months = [end_date - relativedelta(months=i)
                   for i in range(11, -1, -1)]
         month_labels = [m.strftime('%Y-%m') for m in months]
@@ -287,8 +314,8 @@ class DashboradAPIView(APIView):
         bookmarks = api_models.Bookmark.objects.filter(post__user=user).count()
 
         category_counts = list(api_models.Category.objects
-                               .filter(post__user=user)
-                               .annotate(post_count=Count('post'))
+                               .all()
+                               .annotate(post_count=Count('post', filter=Q(post__user=user)))
                                .values('id', 'title', 'slug', 'post_count'))
 
         monthly_posts = self.get_monthly_post_counts(user)
