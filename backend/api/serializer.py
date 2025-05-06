@@ -68,12 +68,16 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    def get_post_count(self, category):
-        return category.posts.count()
+    post_count = serializers.SerializerMethodField()
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = api_models.Category
-        fields = ["id", "title", "image", "slug", "post_count"]
+        fields = ["id", "title", "image", "slug",
+                  "post_count", "user"]  # 添加 user 到字段列表
+
+    def get_post_count(self, category):
+        return category.posts.count() if hasattr(category, 'posts') else 0
 
     def validate_slug(self, value):
         if api_models.Category.objects.filter(slug=value).exists():

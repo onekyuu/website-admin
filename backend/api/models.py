@@ -4,7 +4,6 @@ from django.db.models.signals import post_save
 from django.utils.text import slugify
 from shortuuid.django_fields import ShortUUIDField
 import shortuuid
-import time
 # Create your models here.
 
 
@@ -31,7 +30,7 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    avatar = models.CharField(
+    avatar = models.URLField(
         max_length=100, default="default/default-user.jpg", null=True, blank=True)
     full_name = models.CharField(max_length=100, null=True, blank=True)
     bio = models.CharField(max_length=100, null=True, blank=True)
@@ -65,7 +64,7 @@ post_save.connect(save_user_profile, sender=User)
 
 class Category(models.Model):
     title = models.CharField(max_length=100)
-    image = models.CharField(max_length=100, null=True, blank=True)
+    image = models.URLField(max_length=100, null=True, blank=True)
     slug = models.SlugField(unique=True, null=True, blank=True)
 
     def __str__(self):
@@ -93,7 +92,7 @@ class Post(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     profile = models.ForeignKey(
         Profile, on_delete=models.CASCADE, null=True, blank=True)
-    image = models.CharField(max_length=100, null=True, blank=True)
+    image = models.URLField(max_length=100, null=True, blank=True)
     slug = models.SlugField(unique=True, null=True, blank=True)
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, null=True, blank=True)
@@ -111,7 +110,8 @@ class Post(models.Model):
 
     def save(self, *args, **kwargs):
         if self.slug is None or self.slug == "":
-            self.slug = f"{int(time.time())}-{shortuuid.ShortUUID().random(length=4)}"
+            self.slug = slugify(self.id) + "-" + \
+                shortuuid.ShortUUID().random(length=5)
         super(Post, self).save(*args, **kwargs)
 
 

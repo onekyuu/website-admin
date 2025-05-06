@@ -34,5 +34,6 @@ export async function uploadToOSS(file: File) {
 
   // 上传文件
   const result = await client.put(filename, file);
+  console.log("Upload result:", result);
   return result.url;
 }
