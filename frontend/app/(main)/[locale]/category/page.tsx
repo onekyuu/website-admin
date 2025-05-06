@@ -3,7 +3,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import React, { FC } from "react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { get, patch, post } from "@/lib/fetcher";
+import { del, get, patch, post } from "@/lib/fetcher";
 import { useTranslations } from "next-intl";
 import { DataTable } from "@/components/DataTable";
 import { toast } from "sonner";
@@ -96,6 +96,24 @@ const CategoryPage: FC = () => {
     );
   };
 
+  const handleDeleteCategory = async (id: number) => {
+    const response = await del(`/post/category/update/${id}/`);
+    return response;
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: handleDeleteCategory,
+    onSuccess: (data) => {
+      toast.success(t("Category.deleteSuccess"));
+      refetch();
+      console.log("User deleted:", data);
+    },
+    onError: (error) => {
+      toast.error(t("Category.deleteError"));
+      console.error("Error deleting user:", error);
+    },
+  });
+
   const columns: ColumnDef<Category>[] = [
     {
       accessorKey: "id",
@@ -134,11 +152,12 @@ const CategoryPage: FC = () => {
           {editDialog(row.original)}
           <Button
             variant="outline"
-            onClick={() => {
+            onClick={async () => {
               console.log("Delete", row.original);
+              await deleteMutation.mutate(row.original.id);
             }}
           >
-            Delete
+            {t("Category.delete")}
           </Button>
         </div>
       ),
