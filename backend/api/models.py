@@ -66,6 +66,8 @@ class Category(models.Model):
     title = models.CharField(max_length=100)
     image = models.URLField(max_length=100, null=True, blank=True)
     slug = models.SlugField(unique=True, null=True, blank=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return str(self.title)
