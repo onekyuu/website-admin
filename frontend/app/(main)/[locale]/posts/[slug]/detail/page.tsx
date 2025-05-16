@@ -11,6 +11,7 @@ import { LocaleType } from "@/app/types";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const PostDetailPage: FC = () => {
   const params = useParams();
@@ -39,18 +40,16 @@ const PostDetailPage: FC = () => {
       <div className="w-5xl">
         <div className="px-12 flex flex-col gap-2">
           <div className="flex items-center gap-8 text-(--color-gray-500)">
-            {data?.user && (
-              <div>
-                {/* <Image
-                  src={data.user.image}
-                  width={24}
-                  height={24}
-                  alt="avatar"
-                /> */}
-                @{data?.user.username}
-              </div>
-            )}
-            {data && <div>{dayjs(data.date).format("YYYY-MM-DD")}</div>}
+            <div className="flex items-center gap-2">
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={data?.user.image} />
+                <AvatarFallback>
+                  {data?.user.username.slice(0, 3)}
+                </AvatarFallback>
+              </Avatar>
+              @{data?.user.username}
+            </div>
+            <div>{dayjs(data?.date).format("YYYY-MM-DD")}</div>
           </div>
           <div className="text-3xl">{postData?.title}</div>
           <div className="text-(--color-gray-500)">{postData?.description}</div>

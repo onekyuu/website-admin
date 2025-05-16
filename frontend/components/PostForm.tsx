@@ -1,4 +1,11 @@
 "use client";
+
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import { get } from "@/lib/fetcher";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,44 +27,46 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import useUserData from "@/hooks/useUserData";
-import { useRouter } from "@/i18n/navigations";
-import { get, post } from "@/lib/fetcher";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Loader2 } from "lucide-react";
 
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
-
-type LanguageCode = "zh" | "en" | "ja";
-
+export type LanguageCode = "zh" | "en" | "ja";
 interface TranslationContent {
   title: string;
   description: string;
   content: string;
+  is_ai_generated?: boolean;
+  language?: LanguageCode;
 }
-
-type Translations = {
-  [key in LanguageCode]?: TranslationContent;
-};
-
 interface BasePost {
-  user_id: number;
-  category: number;
-  need_ai_generate?: boolean;
+  user_id?: number;
+  category?: number;
+  translations?: TranslationContent[];
+}
+export type Post = BasePost;
+
+interface PostFormProps {
+  userId?: number;
+  initialValues?: Post;
+  onSubmit: (data: Post) => Promise<void>;
+  loading?: boolean;
+  submitText?: string;
+  defaltLanguage?: LanguageCode;
 }
 
-type Post = BasePost & Translations;
-
-const PostCreatePage = () => {
+export const PostForm: React.FC<PostFormProps> = ({
+  userId,
+  initialValues,
+  onSubmit,
+  loading,
+  defaltLanguage = "zh",
+}) => {
   const t = useTranslations();
-  const router = useRouter();
-  const userId = useUserData()?.user_id;
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(
+    initialValues?.translations?.find(
+      (trans) => trans.language === defaltLanguage,
+    )?.content || "",
+  );
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -85,67 +94,84 @@ const PostCreatePage = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      language: "zh",
-      category: "",
-      need_ai_generate: false,
+      title:
+        initialValues?.translations?.find(
+          (trans) => trans.language === defaltLanguage,
+        )?.title || "",
+      description:
+        initialValues?.translations?.find(
+          (trans) => trans.language === defaltLanguage,
+        )?.description || "",
+      language: defaltLanguage || "zh",
+      category: initialValues?.category?.toString() || "",
     },
   });
 
-  const handleSavePost = async (data: Post) => {
-    const response = await post<{ data: Post }, Post>(
-      "/author/dashboard/post-create/",
-      data,
-    );
-    return response.data;
-  };
-
-  const mutation = useMutation({
-    mutationFn: handleSavePost,
-    onSuccess: (data) => {
-      toast.success("创建成功");
-      console.log("User created:", data);
-      router.push("/posts");
-    },
-    onError: (error) => {
-      toast.error("创建失败");
-      console.error("Error creating user:", error);
-    },
-  });
+  useEffect(() => {
+    if (initialValues)
+      setContent(
+        initialValues.translations?.find(
+          (trans) => trans.language === defaltLanguage,
+        )?.content || "",
+      );
+    form.reset({
+      title:
+        initialValues?.translations?.find(
+          (trans) => trans.language === defaltLanguage,
+        )?.title || "",
+      description:
+        initialValues?.translations?.find(
+          (trans) => trans.language === defaltLanguage,
+        )?.description || "",
+      language: defaltLanguage || "zh",
+      category: initialValues?.category?.toString() || "",
+    });
+  }, [
+    initialValues?.translations,
+    initialValues?.category,
+    defaltLanguage,
+    categories,
+    form,
+  ]);
 
   const handleSave = () => {
     if (!userId) {
-      toast.error(t("Post.userIdErrorMessage"));
+      console.error("User ID is required");
       return;
     }
-    const { title, description, language, category, need_ai_generate } =
-      form.getValues();
-    const newPost = {
-      user_id: parseInt(userId),
+    const { title, description, language, category } = form.getValues();
+    const newPost: Post = {
+      user_id: Number(userId),
       category: parseInt(category),
       [language]: {
         title,
         description,
         content,
       },
-      need_ai_generate,
     };
-    mutation.mutate(newPost);
+    onSubmit(newPost);
   };
 
   const SaveButton = (
     <Button key={"save-post"} onClick={handleSave}>
-      {mutation.isPending && <Loader2 className="animate-spin" />}
+      {/* {mutation.isPending && <Loader2 className="animate-spin" />} */}
       {t("Common.save")}
     </Button>
   );
+
+  console.log("content", content);
 
   return (
     <div>
       <div className="mb-6">
         <Form {...form}>
-          <form className="space-y-4">
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
             <FormField
               control={form.control}
               name="title"
@@ -186,7 +212,7 @@ const PostCreatePage = () => {
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <div className="flex items-center space-x-4">
                         <FormItem className="flex items-center space-x-2">
@@ -221,10 +247,7 @@ const PostCreatePage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("Category.category")}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={t("Category.select")} />
@@ -260,18 +283,20 @@ const PostCreatePage = () => {
                 )}
               />
             </div>
+            <div className="tiptap-editor">
+              {content && (
+                <SimpleEditor
+                  content={JSON.parse(content)}
+                  onChange={setContent}
+                  extraButtons={[SaveButton]}
+                />
+              )}
+            </div>
           </form>
         </Form>
-      </div>
-      <div className="tiptap-editor">
-        <SimpleEditor
-          content={content}
-          onChange={setContent}
-          extraButtons={[SaveButton]}
-        />
       </div>
     </div>
   );
 };
 
-export default PostCreatePage;
+export default PostForm;

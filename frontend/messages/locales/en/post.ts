@@ -5,6 +5,9 @@ const Post = {
   descriptionErrorMessage: "Description must be 100 or fewer characters long ",
   language: "Language",
   needAITranslation: "Need AI Translation",
+  detail: "Detail",
+  edit: "Edit",
+  delete: "Delete",
 };
 
 export default Post;

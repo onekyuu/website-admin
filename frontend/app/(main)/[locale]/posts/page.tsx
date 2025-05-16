@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useImmer } from "use-immer";
 import { LocaleType } from "@/app/types";
 import { DataTable } from "@/components/DataTable";
@@ -46,6 +46,7 @@ type PostListItem = PostData & {
 };
 
 const PostPage = () => {
+  const t = useTranslations();
   const locale = useLocale() as LocaleType;
   const router = useRouter();
   const [pagination, setPagination] = useState<PaginationState>({
@@ -121,16 +122,16 @@ const PostPage = () => {
               router.push(`/posts/${row.original.slug}/detail`);
             }}
           >
-            Detail
+            {t("Post.detail")}
           </Button>
           <Button
             size={"sm"}
             variant={"outline"}
             onClick={() => {
-              console.log("Edit", row.original);
+              router.push(`/posts/${row.original.slug}/edit`);
             }}
           >
-            Edit
+            {t("Post.edit")}
           </Button>
           <Button
             size={"sm"}
@@ -139,7 +140,7 @@ const PostPage = () => {
               console.log("Delete", row.original);
             }}
           >
-            Delete
+            {t("Post.delete")}
           </Button>
         </div>
       ),

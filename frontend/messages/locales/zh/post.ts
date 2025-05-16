@@ -5,6 +5,9 @@ const Post = {
   descriptionErrorMessage: "描述必须少于100个字符",
   language: "语言",
   needAITranslation: "需要AI翻译",
+  detail: "详情",
+  edit: "编辑",
+  delete: "删除",
 };
 
 export default Post;
