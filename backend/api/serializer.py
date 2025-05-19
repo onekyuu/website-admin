@@ -49,9 +49,18 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = api_models.User
-        fields = fields = ['id', 'username', 'email']
+        fields = fields = ['id', 'username', 'email', 'avatar']
+
+    def get_avatar(self, obj):
+        # 关联的profile可能不存在，需做判断
+        profile = getattr(obj, 'profile', None)
+        if profile and profile.avatar:
+            return profile.avatar
+        return None
 
 
 class ProfileSerializer(serializers.ModelSerializer):

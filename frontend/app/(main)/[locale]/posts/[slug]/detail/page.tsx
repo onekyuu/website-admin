@@ -34,7 +34,7 @@ const PostDetailPage: FC = () => {
   return (
     <div className="flex justify-center w-full p-4">
       <Tabs defaultValue={locale} className="w-full">
-        <TabsList>
+        <TabsList className="mx-12 mb-4">
           {languageOptions.map((option) => (
             <TabsTrigger key={option.value} value={option.value}>
               {option.label}
@@ -52,7 +52,7 @@ const PostDetailPage: FC = () => {
                   <div className="flex items-center gap-8 text-(--color-gray-500)">
                     <div className="flex items-center gap-2">
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src={data?.profile.avatar} />
+                        <AvatarImage src={data?.user?.avatar} />
                         <AvatarFallback>
                           {data?.user.username.slice(0, 3)}
                         </AvatarFallback>

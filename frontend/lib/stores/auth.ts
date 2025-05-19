@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui/avatar";
 // Import the 'create' function from the 'zustand' library.
 import { create } from "zustand";
 
@@ -9,6 +10,8 @@ export interface AuthUserState {
   user_id: string | null;
   username: string | null;
   email: string | null;
+  avatar?: string | null;
+  is_superuser?: boolean;
 }
 
 interface AuthState {
@@ -35,6 +38,8 @@ const useAuthStore = create<AuthState>()(
         user_id: get().allUserData?.user_id || null,
         username: get().allUserData?.username || null,
         email: get().allUserData?.email || null,
+        avatar: get().allUserData?.avatar || null,
+        is_superuser: get().allUserData?.is_superuser || false,
       }),
 
       // Define a function 'setUser' that allows setting the 'allUserData' state.
