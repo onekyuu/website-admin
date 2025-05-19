@@ -81,11 +81,11 @@ export function NavUser({ user }: { user: NavUserProps }) {
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
-                <Link href={"/account"}>Account</Link>
+                <Link href={"/account"}>{t("Common.account")}</Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Bell />
-                <Link href={"/notifications"}>Notifications</Link>
+                <Link href={"/notifications"}>{t("Common.notification")}</Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
