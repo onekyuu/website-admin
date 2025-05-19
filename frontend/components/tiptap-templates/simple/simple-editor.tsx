@@ -177,7 +177,7 @@ export function SimpleEditor({
 }: {
   content: string;
   onChange?: (content: string) => void;
-  extraButtons?: React.ReactNode;
+  extraButtons?: React.ReactNode[];
   editable?: boolean;
 }) {
   const isMobile = useMobile();

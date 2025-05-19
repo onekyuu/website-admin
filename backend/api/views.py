@@ -460,7 +460,7 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
             image=data.get("image"),
             # tags=data.get("tags"),
             category=category,
-            status=data.get("post_status", "Active"),
+            status=data.get("status", "Active"),
         )
 
         translations_data = {
@@ -551,27 +551,39 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         data = request.data
-
         post_instance = self.get_object()
-        image = data.get("image")
-        tags = data.get("tags")
-        category_id = data.get("category")
-        post_status = data.get("post_status")
+        updated = False  # 标记是否有修改
 
-        if image != 'undefined':
-            post_instance.image = image
-        post_instance.tags = tags
+        # image = data.get("image")
+        # tags = data.get("tags")
+        category_id = data.get("category")
+        # post_status = data.get("status")
+
+        # if image != 'undefined' and image != post_instance.image:
+        #     post_instance.image = image
+        #     updated = True
+        # if tags != post_instance.tags:
+        #     post_instance.tags = tags
+        #     updated = True
         if category_id:
             category = api_models.Category.objects.get(id=category_id)
-            post_instance.category = category
-        post_instance.status = post_status
-        post_instance.save()
+            if post_instance.category != category:
+                post_instance.category = category
+                updated = True
+        # if post_status and post_instance.status != post_status:
+        #     post_instance.status = post_status
+        #     updated = True
 
+        if updated:
+            post_instance.save()
+
+        # 翻译内容的判断
         translations_data = {
             "zh": data.get("zh"),
             "en": data.get("en"),
             "ja": data.get("ja"),
         }
+        translations_updated = False
         for lang_code, translation in translations_data.items():
             if translation:
                 try:
@@ -579,16 +591,18 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
                         post=post_instance,
                         language=lang_code
                     )
-                    # 修改已有的 translation
-                    post_translation.title = translation.get("title")
-                    post_translation.description = translation.get(
-                        "description")
-                    post_translation.content = translation.get("content")
-                    post_translation.is_ai_generated = translation.get(
-                        "is_ai_generated", False)
-                    post_translation.save()
+                    changed = False
+                    for field in ["title", "description", "content"]:
+                        new_val = translation.get(field)
+                        old_val = getattr(post_translation, field)
+                        if new_val is not None and new_val != old_val:
+                            setattr(post_translation, field, new_val)
+                            changed = True
+                    if changed:
+                        post_translation.is_ai_generated = False
+                        post_translation.save()
+                        translations_updated = True
                 except api_models.PostTranslation.DoesNotExist:
-                    # 如果没有对应语言，自动创建一条
                     api_models.PostTranslation.objects.create(
                         post=post_instance,
                         language=lang_code,
@@ -598,8 +612,12 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
                         is_ai_generated=translation.get(
                             "is_ai_generated", False),
                     )
+                    translations_updated = True
 
-        return Response({"message": "Post updated"}, status=status.HTTP_200_OK)
+        if updated or translations_updated:
+            return Response({"message": "Post updated"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "No changes detected"}, status=status.HTTP_200_OK)
 
 
 region_provider.modify_point('Sts', 'cn-hangzhou', 'sts.aliyuncs.com')
