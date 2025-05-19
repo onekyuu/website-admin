@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthStore } from "@/lib/stores/auth";
 import { patch } from "@/lib/fetcher";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 
 interface UserProfile {
   id: number;
@@ -34,10 +35,11 @@ interface UserProfile {
 }
 
 export default function AccountPage() {
+  const t = useTranslations("Account");
   const userInfo = useAuthStore((state) => state.allUserData);
 
   const formSchema = z.object({
-    username: z.string().min(2, "用户名至少2个字符"),
+    username: z.string().min(2, t("usernameMinLength")),
     avatar: z.string().optional(),
   });
 
@@ -62,8 +64,7 @@ export default function AccountPage() {
   const mutation = useMutation({
     mutationFn: handleSavePost,
     onSuccess: (data) => {
-      toast.success("更新成功");
-      console.log(" updated:", data);
+      toast.success(t("updateSuccess"));
       useAuthStore.getState().setUser({
         user_id: data.user.id.toString(),
         is_superuser: data.is_superuser,
@@ -73,33 +74,28 @@ export default function AccountPage() {
       });
     },
     onError: (error) => {
-      toast.error("更新失败");
+      toast.error(t("updateFailed"));
       console.error("Error updating:", error);
     },
   });
 
   const onSubmit = async (data: FormValues) => {
     if (!userInfo?.user_id) {
-      toast.error("用户信息不完整");
+      toast.error(t("userNotFound"));
       return;
     }
     if (!data.avatar) {
-      toast.error("请上传头像");
+      toast.error(t("avatarRequired"));
       return;
     }
-    try {
-      mutation.mutate({
-        avatar: data.avatar,
-      });
-      toast.success("保存成功");
-    } catch (e) {
-      toast.error("保存失败");
-    }
+    mutation.mutate({
+      avatar: data.avatar,
+    });
   };
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 rounded shadow">
-      <h2 className="text-xl font-bold mb-6">账号信息</h2>
+      <h2 className="text-xl font-bold mb-6">{t("formTitle")}</h2>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
@@ -107,7 +103,7 @@ export default function AccountPage() {
             name="avatar"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>头像</FormLabel>
+                <FormLabel>{t("avatar")}</FormLabel>
                 <div className="space-y-2 flex items-center">
                   <Avatar className="w-14 h-14 rounded-lg mr-4">
                     <AvatarImage src={field?.value} />
@@ -125,9 +121,9 @@ export default function AccountPage() {
                           try {
                             const url = await uploadToOSS(file);
                             field.onChange(url);
-                            toast.success("头像上传成功");
+                            toast.success(t("avatarUploadSuccess"));
                           } catch (err) {
-                            toast.error("头像上传失败");
+                            toast.error(t("avatarUploadFailed"));
                           }
                         }
                       }}
@@ -143,16 +139,20 @@ export default function AccountPage() {
             name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>用户名</FormLabel>
+                <FormLabel>{t("username")}</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="请输入用户名" disabled />
+                  <Input
+                    {...field}
+                    placeholder={t("usernameInputPlaceholder")}
+                    disabled
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <Button type="submit" className="w-full">
-            保存修改
+            {t("save")}
           </Button>
         </form>
       </Form>

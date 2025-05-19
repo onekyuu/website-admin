@@ -1,5 +1,7 @@
+import Account from "./locales/en/account";
 import Category from "./locales/en/category";
 import Common from "./locales/en/common";
+import Dashboard from "./locales/en/dashboard";
 import Header from "./locales/en/header";
 import Login from "./locales/en/login";
 import Menu from "./locales/en/menu";
@@ -12,4 +14,6 @@ export default {
   Header,
   Post,
   Category,
+  Account,
+  Dashboard,
 };

@@ -74,7 +74,7 @@ export type DashboardData = {
 };
 
 export default function Dashboard() {
-  const t = useTranslations();
+  const t = useTranslations("Dashboard");
   const userData = useUserData();
   const { data } = useQuery({
     queryKey: ["dashboard"],
@@ -170,7 +170,7 @@ export default function Dashboard() {
         </div>
         <Card className="col-span-4 row-span-1">
           <CardHeader className="items-center pb-0">
-            <CardTitle>Recent 1 year Posts</CardTitle>
+            <CardTitle>{t("recentYearPosts")}</CardTitle>
             <CardDescription>{getRecentYearRange()}</CardDescription>
           </CardHeader>
           <ChartContainer config={chartConfig} className="max-h-[260px] h-auto">
@@ -193,7 +193,7 @@ export default function Dashboard() {
         </Card>
         <Card className="col-span-2 row-span-1">
           <CardHeader className="items-center pb-0">
-            <CardTitle>All Categories</CardTitle>
+            <CardTitle>{t("allCategories")}</CardTitle>
             <CardDescription>{getRecentYearRange()}</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
@@ -235,7 +235,7 @@ export default function Dashboard() {
                               y={(viewBox.cy || 0) + 24}
                               className="fill-muted-foreground"
                             >
-                              Categories
+                              {t("categories")}
                             </tspan>
                           </text>
                         );
