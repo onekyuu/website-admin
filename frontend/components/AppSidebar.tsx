@@ -26,32 +26,46 @@ import { NavUser } from "./NavUser";
 import useUserData from "@/hooks/useUserData";
 import { get } from "@/lib/fetcher";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { NavSecondary } from "./NavSecondary";
 import { Link } from "@/i18n/navigations";
 import { useTranslations } from "next-intl";
+import { useAuthStore } from "@/lib/stores/auth";
 
 export function AppSidebar() {
   const t = useTranslations();
   const userId = useUserData()?.user_id;
   const { data: userProfile } = useQuery({
-    queryKey: ["posts"],
+    queryKey: ["userProfile", userId],
     queryFn: () =>
       get<{
         user: {
           username: string;
           email: string;
-          image: string;
-          is_superuser: boolean;
         };
+        id: number;
+        is_superuser: boolean;
+        avatar: string;
       }>(`/user/profile/${userId}/`),
   });
+
+  useEffect(() => {
+    if (userProfile) {
+      useAuthStore.getState().setUser({
+        user_id: userProfile.id.toString(),
+        is_superuser: userProfile.is_superuser,
+        avatar: userProfile.avatar,
+        username: userProfile.user.username || null,
+        email: userProfile.user.email || null,
+      });
+    }
+  }, [userProfile]);
 
   const navUser = useMemo(
     () => ({
       name: userProfile?.user.username || "",
       email: userProfile?.user.email || "",
-      avatar: userProfile?.user.image || "",
+      avatar: userProfile?.avatar || "",
     }),
     [userProfile],
   );
@@ -148,7 +162,7 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
 
-        {userProfile?.user.is_superuser && (
+        {userProfile?.is_superuser && (
           <NavSecondary items={navSecondary} className="mt-auto" />
         )}
       </SidebarContent>
