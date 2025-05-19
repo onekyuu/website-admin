@@ -1,5 +1,4 @@
 "use client";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { get } from "@/lib/fetcher";
 import { useQuery } from "@tanstack/react-query";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
@@ -7,47 +6,14 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLocale, useTranslations } from "next-intl";
 import { useImmer } from "use-immer";
-import { LocaleType } from "@/app/types";
 import { DataTable } from "@/components/DataTable";
 import { useRouter } from "@/i18n/navigations";
 import dayjs from "dayjs";
-import { Category } from "@/components/CategoryDialog";
-
-export interface PostTranslation {
-  id: number;
-  language: LocaleType;
-  title: string;
-  description: string;
-  content: string;
-  is_ai_generated: boolean;
-}
-
-export interface PostData {
-  id: number;
-  slug: string;
-  image: string;
-  status: string;
-  date: string;
-  category: Category;
-  translations: PostTranslation[];
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    image: string;
-  };
-}
-
-type PostListItem = PostData & {
-  title?: string;
-  description?: string;
-  content?: string;
-  language: LocaleType;
-};
+import { GetPostData, LanguageCode, PostListResponse } from "./types";
 
 const PostPage = () => {
   const t = useTranslations();
-  const locale = useLocale() as LocaleType;
+  const locale = useLocale() as LanguageCode;
   const router = useRouter();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -57,31 +23,17 @@ const PostPage = () => {
   const { data, refetch } = useQuery({
     queryKey: ["post-list", pagination],
     queryFn: () =>
-      get<{ count: number; results: PostData[] }>(
-        `/post/lists/?page=${pagination.pageIndex + 1}`,
-      ),
+      get<PostListResponse>(`/post/lists/?page=${pagination.pageIndex + 1}`),
   });
-  const [posts, setPosts] = useImmer<PostListItem[]>([]);
+  const [posts, setPosts] = useImmer<GetPostData[]>([]);
 
   useEffect(() => {
     if (data) {
-      setPosts(() => {
-        return data.results?.map((post) => {
-          const { translations, ...rest } = post;
-          if (!translations) return post;
-          const targetTranslation = translations.filter(
-            (item) => item.language === locale,
-          )[0];
-          if (!targetTranslation) return post;
-
-          const { id, ...translationContent } = targetTranslation;
-          return { ...rest, ...translationContent };
-        });
-      });
+      setPosts(data.results);
     }
-  }, [data, setPosts, locale]);
+  }, [data, setPosts]);
 
-  const columns: ColumnDef<PostListItem>[] = [
+  const columns: ColumnDef<GetPostData>[] = [
     {
       accessorKey: "id",
       header: "id",

@@ -109,7 +109,7 @@ class PostTranslationSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     profile = ProfileSerializer(read_only=True)
-    translations = PostTranslationSerializer(many=True, read_only=True)
+    translations = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.Post
@@ -117,6 +117,17 @@ class PostSerializer(serializers.ModelSerializer):
             'id', 'user', 'profile', 'image', 'slug', 'category',
             'status', 'views', 'likes', 'date', 'translations'
         ]
+
+    def get_translations(self, obj):
+        # 返回以语言为key的对象
+        return {
+            t.language: {
+                "title": t.title,
+                "description": t.description,
+                "content": t.content,
+                "is_ai_generated": t.is_ai_generated,
+            } for t in obj.translations.all()
+        }
 
     def __init__(self, *args, **kwargs):
         super(PostSerializer, self).__init__(*args, **kwargs)

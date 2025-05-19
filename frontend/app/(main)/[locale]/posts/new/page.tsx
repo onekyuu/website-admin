@@ -1,100 +1,45 @@
 "use client";
-import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import useUserData from "@/hooks/useUserData";
 import { useRouter } from "@/i18n/navigations";
-import { get, post } from "@/lib/fetcher";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { post } from "@/lib/fetcher";
+import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
+import { useImmer } from "use-immer";
 
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import React from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-
-type LanguageCode = "zh" | "en" | "ja";
-
-interface TranslationContent {
-  title: string;
-  description: string;
-  content: string;
-}
-
-type Translations = {
-  [key in LanguageCode]?: TranslationContent;
-};
-
-interface BasePost {
-  user_id: number;
-  category: number;
-  need_ai_generate?: boolean;
-}
-
-type Post = BasePost & Translations;
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { languageOptions } from "@/lib/constants";
+import PostForm from "@/components/PostForm";
+import {
+  CreatePostData,
+  GetPostData,
+  LanguageCode,
+  PostFormInitialData,
+} from "../types";
 
 const PostCreatePage = () => {
+  const params = useParams();
+  const locale = params?.locale as LanguageCode;
   const t = useTranslations();
   const router = useRouter();
   const userId = useUserData()?.user_id;
-  const [content, setContent] = useState("");
-
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: () =>
-      get<{ id: number; title: string; slug: string; image: string }[]>(
-        `/post/category/list/`,
-      ),
-  });
-
-  const formSchema = z.object({
-    title: z.string({
-      required_error: t("Post.titleErrorMessage"),
-    }),
-    description: z
-      .string()
-      .max(100, {
-        message: t("Post.descriptionErrorMessage"),
-      })
-      .optional(),
-    language: z.enum(["zh", "en", "ja"]),
-    category: z.string(),
-    need_ai_generate: z.boolean().optional(),
-  });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+  const [newPost, setNewPost] = useImmer<CreatePostData>({
+    category: undefined,
+    user_id: parseInt(userId || ""),
+    need_ai_generate: false,
+    [locale]: {
       title: "",
       description: "",
-      language: "zh",
-      category: "",
-      need_ai_generate: false,
+      content: "",
     },
   });
 
-  const handleSavePost = async (data: Post) => {
-    const response = await post<{ data: Post }, Post>(
+  const handleSavePost = async (data: CreatePostData) => {
+    const response = await post<{ data: GetPostData }, CreatePostData>(
       "/author/dashboard/post-create/",
       data,
     );
@@ -114,162 +59,72 @@ const PostCreatePage = () => {
     },
   });
 
+  const handleChange = (data: PostFormInitialData, language: LanguageCode) => {
+    setNewPost((draft) => {
+      draft[language] = {
+        title: data.title || "",
+        description: data.description || "",
+        content: data.content || "",
+      };
+      draft.category = data.category ? parseInt(data.category) : undefined;
+      draft.need_ai_generate = data.need_ai_generate;
+    });
+  };
+
   const handleSave = () => {
     if (!userId) {
       toast.error(t("Post.userIdErrorMessage"));
       return;
     }
-    const { title, description, language, category, need_ai_generate } =
-      form.getValues();
-    const newPost = {
-      user_id: parseInt(userId),
-      category: parseInt(category),
-      [language]: {
-        title,
-        description,
-        content,
-      },
-      need_ai_generate,
-    };
+    if (!newPost?.category) {
+      toast.error("Category is required");
+      return;
+    }
     mutation.mutate(newPost);
   };
 
-  const SaveButton = (
-    <Button key={"save-post"} onClick={handleSave}>
-      {mutation.isPending && <Loader2 className="animate-spin" />}
-      {t("Common.save")}
-    </Button>
-  );
-
   return (
     <div>
-      <div className="mb-6">
-        <Form {...form}>
-          <form className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      required
-                      {...field}
-                      placeholder={t("Post.titlePlaceholder")}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <Tabs defaultValue={locale} className="w-full">
+        <div className="w-full flex items-center justify-between">
+          <TabsList>
+            {languageOptions.map((option) => (
+              <TabsTrigger key={option.value} value={option.value}>
+                {option.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <div>
+            <Button
+              key={"save-post"}
+              onClick={handleSave}
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending && <Loader2 className="animate-spin" />}
+              {t("Common.save")}
+            </Button>
+          </div>
+        </div>
+
+        {languageOptions.map((option) => (
+          <TabsContent key={option.value} value={option.value}>
+            <PostForm
+              mode="create"
+              initialValues={{
+                category: newPost?.category?.toString() || "",
+                need_ai_generate: newPost?.need_ai_generate || false,
+                title: newPost?.[option.value as LanguageCode]?.title ?? "",
+                description:
+                  newPost?.[option.value as LanguageCode]?.description ?? "",
+                content: newPost?.[option.value as LanguageCode]?.content ?? "",
+              }}
+              onChange={(data) =>
+                handleChange(data, option.value as LanguageCode)
+              }
             />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder={t("Post.descriptionPlaceholder")}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="language"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("Post.language")}</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="zh" id="zh" />
-                          </FormControl>
-                          <Label htmlFor="zh">中文</Label>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="en" id="en" />
-                          </FormControl>
-                          <Label htmlFor="en">English</Label>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="ja" id="ja" />
-                          </FormControl>
-                          <Label htmlFor="ja">日本語</Label>
-                        </FormItem>
-                      </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-4 items-center gap-4">
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("Category.category")}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("Category.select")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories?.map((category) => (
-                          <SelectItem
-                            key={category.id}
-                            value={category.id.toString()}
-                          >
-                            {category.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="need_ai_generate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("Post.needAITranslation")}</FormLabel>
-                    <Switch
-                      onCheckedChange={field.onChange}
-                      checked={field.value}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </form>
-        </Form>
-      </div>
-      <div className="tiptap-editor">
-        <SimpleEditor
-          content={content}
-          onChange={setContent}
-          extraButtons={[SaveButton]}
-        />
-      </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 };

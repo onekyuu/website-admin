@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/fetcher";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -17,8 +16,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -28,45 +25,23 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
-
-export type LanguageCode = "zh" | "en" | "ja";
-interface TranslationContent {
-  title: string;
-  description: string;
-  content: string;
-  is_ai_generated?: boolean;
-  language?: LanguageCode;
-}
-interface BasePost {
-  user_id?: number;
-  category?: number;
-  translations?: TranslationContent[];
-}
-export type Post = BasePost;
+import Image from "next/image";
+import { PostFormInitialData } from "@/app/(main)/[locale]/posts/types";
 
 interface PostFormProps {
+  mode: "create" | "edit";
   userId?: number;
-  initialValues?: Post;
-  onSubmit: (data: Post) => Promise<void>;
-  loading?: boolean;
-  submitText?: string;
-  defaltLanguage?: LanguageCode;
+  initialValues?: PostFormInitialData;
+  onChange: (data: PostFormInitialData) => void;
 }
 
 export const PostForm: React.FC<PostFormProps> = ({
-  userId,
+  mode,
   initialValues,
-  onSubmit,
-  loading,
-  defaltLanguage = "zh",
+  onChange,
 }) => {
   const t = useTranslations();
-  const [content, setContent] = useState(
-    initialValues?.translations?.find(
-      (trans) => trans.language === defaltLanguage,
-    )?.content || "",
-  );
+  const didInit = useRef(false);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -86,7 +61,7 @@ export const PostForm: React.FC<PostFormProps> = ({
         message: t("Post.descriptionErrorMessage"),
       })
       .optional(),
-    language: z.enum(["zh", "en", "ja"]),
+    content: z.string(),
     category: z.string(),
     need_ai_generate: z.boolean().optional(),
   });
@@ -94,84 +69,40 @@ export const PostForm: React.FC<PostFormProps> = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title:
-        initialValues?.translations?.find(
-          (trans) => trans.language === defaltLanguage,
-        )?.title || "",
-      description:
-        initialValues?.translations?.find(
-          (trans) => trans.language === defaltLanguage,
-        )?.description || "",
-      language: defaltLanguage || "zh",
-      category: initialValues?.category?.toString() || "",
+      title: initialValues?.title || "",
+      description: initialValues?.description || "",
+      content: initialValues?.content || "",
+      category: initialValues?.category || "",
+      need_ai_generate: false,
     },
   });
 
   useEffect(() => {
-    if (initialValues)
-      setContent(
-        initialValues.translations?.find(
-          (trans) => trans.language === defaltLanguage,
-        )?.content || "",
-      );
-    form.reset({
-      title:
-        initialValues?.translations?.find(
-          (trans) => trans.language === defaltLanguage,
-        )?.title || "",
-      description:
-        initialValues?.translations?.find(
-          (trans) => trans.language === defaltLanguage,
-        )?.description || "",
-      language: defaltLanguage || "zh",
-      category: initialValues?.category?.toString() || "",
+    const subscription = form.watch((values) => {
+      onChange?.(values as PostFormInitialData);
     });
-  }, [
-    initialValues?.translations,
-    initialValues?.category,
-    defaltLanguage,
-    categories,
-    form,
-  ]);
+    return () => subscription.unsubscribe();
+  }, [form, onChange]);
 
-  const handleSave = () => {
-    if (!userId) {
-      console.error("User ID is required");
-      return;
+  useEffect(() => {
+    console.log("initialValues", initialValues);
+    if (initialValues && !didInit.current) {
+      form.reset({
+        title: initialValues?.title || "",
+        description: initialValues?.description || "",
+        content: initialValues?.content || "",
+        category: initialValues?.category || "",
+        need_ai_generate: false,
+      });
+      didInit.current = true;
     }
-    const { title, description, language, category } = form.getValues();
-    const newPost: Post = {
-      user_id: Number(userId),
-      category: parseInt(category),
-      [language]: {
-        title,
-        description,
-        content,
-      },
-    };
-    onSubmit(newPost);
-  };
-
-  const SaveButton = (
-    <Button key={"save-post"} onClick={handleSave}>
-      {/* {mutation.isPending && <Loader2 className="animate-spin" />} */}
-      {t("Common.save")}
-    </Button>
-  );
-
-  console.log("content", content);
+  }, [initialValues, form]);
 
   return (
     <div>
       <div className="mb-6">
         <Form {...form}>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSave();
-            }}
-          >
+          <form className="space-y-4">
             <FormField
               control={form.control}
               name="title"
@@ -198,43 +129,6 @@ export const PostForm: React.FC<PostFormProps> = ({
                       {...field}
                       placeholder={t("Post.descriptionPlaceholder")}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="language"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("Post.language")}</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="zh" id="zh" />
-                          </FormControl>
-                          <Label htmlFor="zh">中文</Label>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="en" id="en" />
-                          </FormControl>
-                          <Label htmlFor="en">English</Label>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="ja" id="ja" />
-                          </FormControl>
-                          <Label htmlFor="ja">日本語</Label>
-                        </FormItem>
-                      </div>
-                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -268,30 +162,46 @@ export const PostForm: React.FC<PostFormProps> = ({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="need_ai_generate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("Post.needAITranslation")}</FormLabel>
-                    <Switch
-                      onCheckedChange={field.onChange}
-                      checked={field.value}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="tiptap-editor">
-              {content && (
-                <SimpleEditor
-                  content={JSON.parse(content)}
-                  onChange={setContent}
-                  extraButtons={[SaveButton]}
+              {mode === "create" && (
+                <FormField
+                  control={form.control}
+                  name="need_ai_generate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("Post.needAITranslation")}</FormLabel>
+                      <Switch
+                        onCheckedChange={field.onChange}
+                        checked={field.value}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               )}
+              {mode === "edit" && initialValues?.is_ai_generated && (
+                <div className="flex items-center gap-2 self-baseline-last">
+                  <Image
+                    className="rounded-md object-cover"
+                    width={24}
+                    height={24}
+                    src={"/deepseek.svg"}
+                    alt="deepseek"
+                  />
+                  <div className="text-sm">Translated by Deepseek</div>
+                </div>
+              )}
             </div>
+            <FormField
+              control={form.control}
+              name="content"
+              render={({ field }) => (
+                <SimpleEditor
+                  key={initialValues?.language}
+                  content={field.value ? JSON.parse(field.value) : ""}
+                  onChange={field.onChange}
+                />
+              )}
+            />
           </form>
         </Form>
       </div>
