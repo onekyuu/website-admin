@@ -8,6 +8,10 @@ const Post = {
   detail: "详情",
   edit: "编辑",
   delete: "删除",
+  userNotFound: "用户未找到",
+  postNotFound: "文章未找到",
+  deleteSuccess: "文章删除成功",
+  deleteError: "删除文章时出错",
 };
 
 export default Post;

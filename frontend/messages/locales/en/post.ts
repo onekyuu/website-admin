@@ -8,6 +8,10 @@ const Post = {
   detail: "Detail",
   edit: "Edit",
   delete: "Delete",
+  userNotFound: "User not found",
+  postNotFound: "Post not found",
+  deleteSuccess: "Post deleted successfully",
+  deleteError: "Error deleting post",
 };
 
 export default Post;
