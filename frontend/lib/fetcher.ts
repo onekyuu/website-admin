@@ -92,6 +92,15 @@ export async function fetcher<T>(
     throw new Error(`Fetch error: ${res.status}`);
   }
 
+  // 204 No Content 或无内容时不调用 res.json()
+  if (res.status === 204) {
+    return null as T;
+  }
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    return null as T;
+  }
+
   return res.json();
 }
 /**

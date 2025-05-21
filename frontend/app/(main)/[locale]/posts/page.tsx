@@ -1,6 +1,6 @@
 "use client";
-import { get } from "@/lib/fetcher";
-import { useQuery } from "@tanstack/react-query";
+import { get, del } from "@/lib/fetcher";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ColumnDef, PaginationState } from "@tanstack/react-table";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,14 @@ import { DataTable } from "@/components/DataTable";
 import { useRouter } from "@/i18n/navigations";
 import dayjs from "dayjs";
 import { GetPostData, LanguageCode, PostListResponse } from "./types";
+import { toast } from "sonner";
+import { useAuthStore } from "@/lib/stores/auth";
+import { on } from "events";
 
 const PostPage = () => {
   const t = useTranslations();
   const locale = useLocale() as LanguageCode;
+  const userId = useAuthStore((state) => state.allUserData)?.user_id;
   const router = useRouter();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -26,6 +30,37 @@ const PostPage = () => {
       get<PostListResponse>(`/post/lists/?page=${pagination.pageIndex + 1}`),
   });
   const [posts, setPosts] = useImmer<GetPostData[]>([]);
+
+  const handleDeletePost = async (id: number) => {
+    const response = await del(
+      `/author/dashboard/post-detail/${userId}/${id}/`,
+    );
+    return response;
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: handleDeletePost,
+    onSuccess: (data) => {
+      toast.success(t("Post.deleteSuccess"));
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(t("Post.deleteError"));
+      console.error("Error deleting post:", error);
+    },
+  });
+
+  const onDeletePost = (id: number) => {
+    if (!userId) {
+      toast.error(t("Post.userNotFound"));
+      return;
+    }
+    if (!id) {
+      toast.error(t("Post.postNotFound"));
+      return;
+    }
+    deleteMutation.mutate(id);
+  };
 
   useEffect(() => {
     if (data) {
@@ -41,6 +76,7 @@ const PostPage = () => {
     {
       accessorKey: "title",
       header: "Title",
+      cell: ({ row }) => row.original.translations[locale]?.title,
     },
     {
       accessorKey: "slug",
@@ -89,7 +125,7 @@ const PostPage = () => {
             size={"sm"}
             variant="outline"
             onClick={() => {
-              console.log("Delete", row.original);
+              onDeletePost(row.original.id);
             }}
           >
             {t("Post.delete")}

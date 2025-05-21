@@ -112,8 +112,7 @@ class Post(models.Model):
 
     def save(self, *args, **kwargs):
         if self.slug is None or self.slug == "":
-            self.slug = slugify(self.id) + "-" + \
-                shortuuid.ShortUUID().random(length=5)
+            self.slug = shortuuid.ShortUUID().random(length=8)
         super(Post, self).save(*args, **kwargs)
 
 

@@ -8,6 +8,10 @@ const Post = {
   detail: "詳細",
   edit: "編集",
   delete: "削除",
+  userNotFound: "ユーザーが見つかりません",
+  postNotFound: "投稿が見つかりません",
+  deleteSuccess: "投稿が正常に削除されました",
+  deleteError: "投稿の削除中にエラーが発生しました",
 };
 
 export default Post;
