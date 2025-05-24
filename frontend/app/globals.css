@@ -116,10 +116,6 @@
   --color-background-3: oklch(0.88 0.02 261.23);
   --color-background-4: oklch(0.81 0.03 261.23);
 
-  --color-background-dark-1: oklch(0.21 0.03 261.23);
-  --color-background-dark-2: oklch(0.17 0.03 261.23);
-  --color-background-dark-3: oklch(0.13 0.03 261.23);
-  --color-background-dark-4: oklch(0.1 0.03 261.23);
   --color-gradient-1: radial-gradient(
     var(--color-primary-700) 0%,
     var(--color-secondary-500) 100%
@@ -224,6 +220,10 @@
   --chart-3: 216 92% 60%;
   --chart-4: 210 98% 78%;
   --chart-5: 212 97% 87%;
+  --color-background-1: oklch(0.21 0.03 261.23);
+  --color-background-2: oklch(0.17 0.03 261.23);
+  --color-background-3: oklch(0.13 0.03 261.23);
+  --color-background-4: oklch(0.1 0.03 261.23);
 
   .react-calendar-heatmap .color-empty {
     fill: var(--card);
