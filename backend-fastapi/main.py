@@ -20,5 +20,6 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
-def get_user(db: Session, user_id: int):
+@app.get("/users/{user_id}/")
+def get_user(user_id: int, db: db_dependency):
     return db.query(models.User).filter(models.User.id == user_id).first()
