@@ -1,0 +1,16 @@
+[project]
+name = "backend-fastapi"
+version = "0.1.0"
+description = "FastAPI backend for website admin"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.119.0",
+    "uvicorn==0.37.0",
+    "sqlalchemy==2.0.44",
+    "psycopg2-binary==2.9.11",
+    "pydantic==2.12.2",
+    "python-dotenv>=1.1.1",
+]
+
+[project.env]
+venv = ".venv"
