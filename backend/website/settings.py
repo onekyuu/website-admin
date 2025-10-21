@@ -189,6 +189,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://admin.keyu.wang"
+    "https://admin.keyu.wang",
+    "https://keyu.wang",
+    "https://www.keyu.wang",
 ]
 AUTH_USER_MODEL = 'api.User'
