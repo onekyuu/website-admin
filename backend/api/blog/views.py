@@ -46,12 +46,13 @@ import json
 import random
 
 # Custom Imports
+from api import models as api_models
 from api.blog.models import Bookmark, Category, Comment, Notification, Post, PostTranslation
-from api.core.models import User, Profile
 from api.blog.serializers import CategorySerializer, CommentSerializer, DashboardSerializer, NotificationSerializer, PostSerializer
-from api.core.serializers import MyTokenObtainPairSerializer, RegisterSerializer, UserSerializer, ProfileSerializer
+from api.core.models import User
 from api.core.pagination import StandardResultsSetPagination
 from api.core.permissions import IsOwnerOrReadOnly
+from api.core.serializers import MyTokenObtainPairSerializer
 
 client = OpenAI(
     # This is the default and can be omitted
@@ -61,27 +62,27 @@ client = OpenAI(
 
 
 # class StandardResultsSetPagination(PageNumberPagination):
-#     page_size = 10  # 每页20条
+#     page_size = 10  # 每页10条
 #     page_size_query_param = 'page_size'
 #     max_page_size = 100
 
 
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+# class MyTokenObtainPairView(TokenObtainPairView):
+#     serializer_class = MyTokenObtainPairSerializer
 
 
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    permission_classes = [AllowAny]
-    serializer_class = RegisterSerializer
+# class RegisterView(generics.CreateAPIView):
+#     queryset = User.objects.all()
+#     permission_classes = [AllowAny]
+#     serializer_class = RegisterSerializer
 
-    @swagger_auto_schema(
-        operation_summary="Register a new user",
-        request_body=RegisterSerializer,
-        responses={201: "User created successfully", 400: "Bad request"}
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+#     @swagger_auto_schema(
+#         operation_summary="Register a new user",
+#         request_body=RegisterSerializer,
+#         responses={201: "User created successfully", 400: "Bad request"}
+#     )
+#     def post(self, request, *args, **kwargs):
+#         return super().post(request, *args, **kwargs)
 
 
 # class IsOwnerOrReadOnly(BasePermission):
@@ -93,46 +94,46 @@ class RegisterView(generics.CreateAPIView):
 #         return obj.user == request.user or request.user.is_superuser
 
 
-class ProfileView(generics.RetrieveUpdateAPIView):
-    serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+# class ProfileView(generics.RetrieveUpdateAPIView):
+#     serializer_class = ProfileSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
-    def get(self, request, user_id):
-        try:
-            user = User.objects.get(id=user_id)
-            profile = Profile.objects.get(user=user)
-            serializer = ProfileSerializer(profile)
-            return Response(serializer.data)
-        except (User.DoesNotExist, Profile.DoesNotExist):
-            return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
+#     def get(self, request, user_id):
+#         try:
+#             user = User.objects.get(id=user_id)
+#             profile = Profile.objects.get(user=user)
+#             serializer = ProfileSerializer(profile)
+#             return Response(serializer.data)
+#         except (User.DoesNotExist, Profile.DoesNotExist):
+#             return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
 
-    def post(self, request, user_id):
-        try:
-            user = User.objects.get(id=user_id)
-            profile = Profile.objects.get(user=user)
-            self.check_object_permissions(
-                request, profile)  # 检查权限（IsOwnerOrReadOnly）
+#     def post(self, request, user_id):
+#         try:
+#             user = User.objects.get(id=user_id)
+#             profile = Profile.objects.get(user=user)
+#             self.check_object_permissions(
+#                 request, profile)  # 检查权限（IsOwnerOrReadOnly）
 
-            serializer = ProfileSerializer(
-                profile, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except (User.DoesNotExist, Profile.DoesNotExist):
-            return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
+#             serializer = ProfileSerializer(
+#                 profile, data=request.data, partial=True)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response(serializer.data)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         except (User.DoesNotExist, Profile.DoesNotExist):
+#             return Response({"error": "用户不存在"}, status=status.HTTP_404_NOT_FOUND)
 
-    def patch(self, request, user_id):
-        user = get_object_or_404(User, id=user_id)
-        profile = get_object_or_404(Profile, user=user)
-        self.check_object_permissions(request, profile)
+#     def patch(self, request, user_id):
+#         user = get_object_or_404(User, id=user_id)
+#         profile = get_object_or_404(Profile, user=user)
+#         self.check_object_permissions(request, profile)
 
-        serializer = self.get_serializer(
-            profile, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         serializer = self.get_serializer(
+#             profile, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CategoryCreateApiView(generics.CreateAPIView):

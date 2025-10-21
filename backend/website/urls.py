@@ -1,5 +1,5 @@
 """
-URL configuration for blog project.
+URL configuration for website project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.2/topics/http/urls/
@@ -12,7 +12,7 @@ Class-based views
     2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
 Including another URLconf
     1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+    2. Add a URL to urlpatterns:  path('website/', include('website.urls'))
 """
 from django.contrib import admin
 from django.urls import path, include
@@ -25,7 +25,7 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Blog Backend APIs",
+        title="Website Backend APIs",
         default_version="v1",
         description="This is the documentation for the backend API",
         # terms_of_service="http://mywbsite.com/policies/",
