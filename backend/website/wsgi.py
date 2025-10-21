@@ -1,5 +1,5 @@
 """
-WSGI config for blog project.
+WSGI config for Website project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -14,6 +14,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'blog.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'website.settings')
 
 application = get_wsgi_application()
