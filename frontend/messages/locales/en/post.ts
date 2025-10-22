@@ -12,6 +12,8 @@ const Post = {
   postNotFound: "Post not found",
   deleteSuccess: "Post deleted successfully",
   deleteError: "Error deleting post",
+  imageLabel: "Post Cover Image",
+  imagePlaceholder: "Input post cover image URL",
 };
 
 export default Post;

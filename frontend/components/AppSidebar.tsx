@@ -90,6 +90,11 @@ export function AppSidebar() {
           url: "/posts/new",
           icon: <FileText className="size-4" />,
         },
+        {
+          title: "Blog Images",
+          url: "/posts/images",
+          icon: <FileText className="size-4" />,
+        },
       ],
     },
     {

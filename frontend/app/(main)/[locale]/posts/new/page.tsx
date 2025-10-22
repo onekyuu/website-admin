@@ -36,6 +36,7 @@ const PostCreatePage = () => {
       description: "",
       content: "",
     },
+    image: undefined,
   });
 
   const handleSavePost = async (data: CreatePostData) => {
@@ -117,6 +118,7 @@ const PostCreatePage = () => {
                 description:
                   newPost?.[option.value as LanguageCode]?.description ?? "",
                 content: newPost?.[option.value as LanguageCode]?.content ?? "",
+                image: newPost?.image || "",
               }}
               onChange={(data) =>
                 handleChange(data, option.value as LanguageCode)

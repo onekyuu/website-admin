@@ -9,11 +9,19 @@ const config: NextConfig = {
   images: {
     remotePatterns: [
       {
+        protocol: "http",
+        hostname: "onekyuu-blog.oss-cn-shanghai.aliyuncs.com",
+      },
+      {
         protocol: "https",
         hostname: "onekyuu-blog.oss-cn-shanghai.aliyuncs.com",
         port: "",
         pathname: "/uploads/**",
         search: "",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
       },
     ],
   },

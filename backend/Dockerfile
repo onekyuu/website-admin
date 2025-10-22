@@ -1,5 +1,5 @@
 # 使用阿里云ACR 镜像
-FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-base:v1.0.5
+FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-base:v1.0.6
 
 # 设置工作目录
 WORKDIR /app

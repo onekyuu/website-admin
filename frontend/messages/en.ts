@@ -6,6 +6,7 @@ import Header from "./locales/en/header";
 import Login from "./locales/en/login";
 import Menu from "./locales/en/menu";
 import Post from "./locales/en/post";
+import Images from "./locales/en/images";
 
 export default {
   Common,
@@ -16,4 +17,5 @@ export default {
   Category,
   Account,
   Dashboard,
+  Images,
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +27,10 @@ import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { PostFormInitialData } from "@/app/(main)/[locale]/posts/types";
+import { uploadToOSS } from "@/lib/oss-upload";
+import { X } from "lucide-react";
+import { deleteFromOSS } from "@/lib/oss-delete";
+import { toast } from "sonner";
 
 interface PostFormProps {
   mode: "create" | "edit";
@@ -42,6 +46,9 @@ export const PostForm: React.FC<PostFormProps> = ({
 }) => {
   const t = useTranslations();
   const didInit = useRef(false);
+  const [imagePreview, setImagePreview] = useState<string | undefined>(
+    initialValues?.image,
+  );
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -64,6 +71,7 @@ export const PostForm: React.FC<PostFormProps> = ({
     content: z.string(),
     category: z.string(),
     need_ai_generate: z.boolean().optional(),
+    image: z.string().optional(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -74,8 +82,28 @@ export const PostForm: React.FC<PostFormProps> = ({
       content: initialValues?.content || "",
       category: initialValues?.category || "",
       need_ai_generate: false,
+      image: initialValues?.image || "",
     },
   });
+
+  const handleDeleteImage = async () => {
+    const currentImage = form.getValues("image");
+    if (!currentImage) return;
+
+    try {
+      const success = await deleteFromOSS(currentImage);
+      if (success) {
+        form.setValue("image", "");
+        setImagePreview(undefined);
+        toast.success(t("Post.imageDeleteSuccess"));
+      } else {
+        toast.error(t("Post.imageDeleteFailed"));
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error(t("Post.imageDeleteFailed"));
+    }
+  };
 
   useEffect(() => {
     const subscription = form.watch((values) => {
@@ -94,6 +122,7 @@ export const PostForm: React.FC<PostFormProps> = ({
         category: initialValues?.category || "",
         need_ai_generate: false,
       });
+      setImagePreview(initialValues?.image);
       didInit.current = true;
     }
   }, [initialValues, form]);
@@ -190,6 +219,61 @@ export const PostForm: React.FC<PostFormProps> = ({
                   <div className="text-sm">Translated by Deepseek</div>
                 </div>
               )}
+            </div>
+            <div>
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("Post.imageLabel")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        placeholder={t("Post.imagePlaceholder")}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const oldImage = field.value;
+                              if (oldImage) {
+                                await deleteFromOSS(oldImage);
+                              }
+
+                              const imageURL = await uploadToOSS(file);
+                              field.onChange(imageURL);
+                              setImagePreview(imageURL);
+                              toast.success(t("Post.imageUploadSuccess"));
+
+                              e.target.value = "";
+                            } catch (error) {
+                              console.error("Upload failed:", error);
+                              toast.error(t("Post.imageUploadFailed"));
+                            }
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    {imagePreview && (
+                      <div className="mt-2 relative inline-block">
+                        <Image
+                          src={imagePreview}
+                          alt="Preview"
+                          width={400}
+                          height={300}
+                          className="rounded-md object-cover"
+                        />
+                        <X
+                          className="cursor-pointer w-5 h-5 absolute top-0 right-0"
+                          onClick={handleDeleteImage}
+                        />
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <FormField
               control={form.control}

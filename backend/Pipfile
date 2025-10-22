@@ -33,6 +33,8 @@ beautifulsoup4 = "*"
 aliyun-python-sdk-core = "*"
 aliyun-python-sdk-sts = "*"
 python-dateutil = "*"
+alibabacloud-oss-v2 = "*"
+alibabacloud-credentials = "*"
 
 [dev-packages]
 astroid = "==3.3.9"
