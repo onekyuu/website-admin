@@ -1,7 +1,6 @@
 import OSS from "ali-oss";
+import { API_BASE_URL } from "./constants";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
 export async function uploadToOSS(file: File) {
   // 从 Django 后端获取凭证
   const credentials = await fetch(`${API_BASE_URL}/oss/credentials/`).then(

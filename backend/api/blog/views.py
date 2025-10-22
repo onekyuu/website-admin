@@ -46,7 +46,6 @@ import json
 import random
 
 # Custom Imports
-from api import models as api_models
 from api.blog.models import Bookmark, Category, Comment, Notification, Post, PostTranslation
 from api.blog.serializers import CategorySerializer, CommentSerializer, DashboardSerializer, NotificationSerializer, PostSerializer
 from api.core.models import User
@@ -245,7 +244,7 @@ class DashboradAPIView(APIView):
 
         category_counts = list(Category.objects
                                .all()
-                               .annotate(post_count=Count('post', filter=Q(post__user=user)))
+                               .annotate(post_count=Count('posts', filter=Q(posts__user=user)))
                                .values('id', 'title', 'slug', 'post_count'))
 
         monthly_posts = self.get_monthly_post_counts(user)
@@ -257,8 +256,8 @@ class DashboradAPIView(APIView):
                              .values('id', 'slug', 'date', 'like_count', 'image'))
 
         category_likes = list(Category.objects
-                              .filter(post__user=user)
-                              .annotate(like_count=Count('post__likes'))
+                              .filter(posts__user=user)
+                              .annotate(like_count=Count('posts__likes'))
                               .values('title', 'like_count'))
         one_year_ago = timezone.now() - timedelta(days=365)
         daily_posts = list(
@@ -599,5 +598,110 @@ def get_oss_credentials(request):
         print(f"[ERROR] STS Request Failed: {str(e)}")
         return JsonResponse(
             {'error': 'STS Credential Generation Failed', 'detail': str(e)},
+            status=500
+        )
+
+def list_oss_images(request):
+    import alibabacloud_oss_v2 as oss
+    from alibabacloud_oss_v2.models import ListObjectsV2Request
+    bucket_name = os.getenv('OSS_BUCKET')
+    region = os.getenv('OSS_REGION')
+    endpoint = f"https://{region}.aliyuncs.com"
+
+    # 获取分页参数
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 50))
+    prefix = request.GET.get('prefix', 'uploads/')
+    search = request.GET.get('search', '')
+
+    credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
+
+    cfg = oss.config.load_default()
+    cfg.credentials_provider = credentials_provider
+    cfg.region = 'cn-shanghai'
+    cfg.endpoint = endpoint
+
+    client = oss.Client(cfg)
+
+    try:
+        req = ListObjectsV2Request(
+            bucket=bucket_name,
+            prefix=prefix,
+            max_keys=100,
+        )
+
+        paginator = client.list_objects_v2_paginator()
+                
+        all_images = []
+        image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico']
+
+
+        # 遍历对象列表的每一页
+        for page_result in paginator.iter_page(req):
+            print(f"--- Page ---", page_result)
+            if page_result.contents:
+                for obj in page_result.contents:
+                    # 只处理文件（不是目录）
+                    if not obj.key.endswith('/'):
+                        # 检查是否是图片文件
+                        if any(obj.key.lower().endswith(ext) for ext in image_extensions):
+                            # 如果有搜索词，进行过滤
+                            if search and search not in obj.key.lower():
+                                continue
+                            
+                            all_images.append({
+                                'name': obj.key,
+                                'url': f"https://{bucket_name}.{region}.aliyuncs.com/{obj.key}",
+                                'size': obj.size,
+                                'lastModified': obj.last_modified.isoformat() if obj.last_modified else None,
+                                'etag': obj.etag,
+                            })
+                # 按最后修改时间倒序排序
+        all_images.sort(key=lambda x: x['lastModified'] or '', reverse=True)
+
+        # 手动分页
+        total_count = len(all_images)
+        start_index = (page - 1) * page_size
+        end_index = start_index + page_size
+        
+        paginated_images = all_images[start_index:end_index]
+        
+        # 计算分页信息
+        has_next = end_index < total_count
+        has_previous = page > 1
+        
+        # 构造完整 URL（如果需要）
+        from urllib.parse import urlencode
+        base_url = request.build_absolute_uri(request.path)
+        
+        def build_page_url(page_num):
+            params = {
+                'page': page_num,
+                'page_size': page_size,
+                'prefix': prefix,
+            }
+            if search:
+                params['search'] = search
+            return f"{base_url}?{urlencode(params)}"
+        
+        next_url = build_page_url(page + 1) if has_next else None
+        previous_url = build_page_url(page - 1) if has_previous else None
+
+        return JsonResponse({
+            'count': total_count,
+            'next': next_url,
+            'previous': previous_url,
+            'results': paginated_images,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size,
+        })
+
+    except Exception as e:
+        print(f"[ERROR] OSS List Request Failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {'error': 'OSS List Failed', 'detail': str(e)},
             status=500
         )

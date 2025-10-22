@@ -12,6 +12,8 @@ const Post = {
   postNotFound: "投稿が見つかりません",
   deleteSuccess: "投稿が正常に削除されました",
   deleteError: "投稿の削除中にエラーが発生しました",
+  imageLabel: "投稿カバー画像",
+  imagePlaceholder: "投稿カバー画像のURLを入力してください",
 };
 
 export default Post;

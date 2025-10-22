@@ -96,6 +96,7 @@ const PostEditPage = () => {
         category: postData.category.id.toString(),
         is_ai_generated:
           postData?.translations?.[lang]?.is_ai_generated || false,
+        image: postData?.image || "",
       };
     },
     [postData],

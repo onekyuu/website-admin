@@ -12,7 +12,6 @@ import dayjs from "dayjs";
 import { GetPostData, LanguageCode, PostListResponse } from "./types";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/auth";
-import { on } from "events";
 
 const PostPage = () => {
   const t = useTranslations();
