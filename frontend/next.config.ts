@@ -8,16 +8,14 @@ const config: NextConfig = {
   turbopack: {},
   images: {
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "onekyuu-blog.oss-cn-shanghai.aliyuncs.com",
-      },
+      // {
+      //   protocol: "http",
+      //   hostname: "onekyuu-blog.oss-cn-shanghai.aliyuncs.com",
+      // },
       {
         protocol: "https",
         hostname: "onekyuu-blog.oss-cn-shanghai.aliyuncs.com",
-        port: "",
         pathname: "/uploads/**",
-        search: "",
       },
       {
         protocol: "https",
