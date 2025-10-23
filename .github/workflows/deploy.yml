@@ -87,7 +87,13 @@ jobs:
 
       - name: 🐳 Build and deploy frontend with Docker (detached)
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no \
+              -o ServerAliveInterval=60 \
+              -o ServerAliveCountMax=6000 \
+              -o TCPKeepAlive=yes \
+              ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }} 'bash -s' << 'EOF'
+            set -e
+            
             echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login ${{ secrets.ALIYUN_REGISTRY_SERVER }} \
               -u ${{ secrets.ALIYUN_REGISTRY_USERNAME }} --password-stdin
             
