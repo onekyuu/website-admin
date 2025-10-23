@@ -28,6 +28,6 @@ urlpatterns = [
          views.DashboardPostCreateAPIView.as_view()),
     path('author/dashboard/post-detail/<user_id>/<post_id>/',
          views.DashboardPostUpdateAPIView.as_view()),
-    path('oss/credentials/', views.get_oss_credentials, name='oss-credentials'),
-    path('oss/images/list/', views.list_oss_images, name='oss-images-list'),
+#     path('oss/credentials/', views.get_oss_credentials, name='oss-credentials'),
+#     path('oss/images/list/', views.list_oss_images, name='oss-images-list'),
 ]
