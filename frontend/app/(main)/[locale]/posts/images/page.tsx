@@ -35,16 +35,17 @@ import {
 } from "lucide-react";
 import { uploadToOSS } from "@/lib/oss-upload";
 import { deleteFromOSS } from "@/lib/oss-delete";
-import OSS from "ali-oss";
-import { API_BASE_URL } from "@/lib/constants";
 import { get } from "@/lib/fetcher";
 import { PaginationState } from "@tanstack/react-table";
+import dayjs from "dayjs";
 
 interface OSSImage {
   name: string;
   url: string;
   size: number;
   lastModified: string;
+  directoryName: string;
+  directory: string;
 }
 
 interface ListOSSImagesResponse {
@@ -78,6 +79,7 @@ export default function ImagesPage() {
         `/oss/images/list/?page=${pagination.pageIndex + 1}`,
       ),
   });
+  console.log("ossImagesList:", ossImagesList);
 
   // 删除单个图片
   const deleteMutation = useMutation({
@@ -120,55 +122,6 @@ export default function ImagesPage() {
       toast.error(t("Images.batchDeleteFailed"));
     },
   });
-
-  // 上传图片
-  const handleUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    setIsUploading(true);
-    const uploadPromises = Array.from(files).map(async (file) => {
-      // 验证文件类型
-      const validTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ];
-      if (!validTypes.includes(file.type)) {
-        toast.error(`${file.name}: ${t("Images.invalidType")}`);
-        return null;
-      }
-
-      // 验证文件大小 (10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`${file.name}: ${t("Images.tooLarge")}`);
-        return null;
-      }
-
-      try {
-        const url = await uploadToOSS(file);
-        return url;
-      } catch (error) {
-        toast.error(`${file.name}: ${t("Images.uploadFailed")}`);
-        return null;
-      }
-    });
-
-    try {
-      const results = await Promise.all(uploadPromises);
-      const successCount = results.filter((r) => r !== null).length;
-
-      if (successCount > 0) {
-        toast.success(t("Images.uploadSuccess", { count: successCount }));
-        queryClient.invalidateQueries({ queryKey: ["oss-images"] });
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   // 处理删除确认
   const handleDeleteClick = (imageUrl: string) => {
@@ -239,31 +192,6 @@ export default function ImagesPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
-        </div>
-
-        {/* 上传按钮 */}
-        <div>
-          <Input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(e) => handleUpload(e.target.files)}
-            className="hidden"
-            id="upload-images"
-            disabled={isUploading}
-          />
-          <label htmlFor="upload-images">
-            <Button asChild disabled={isUploading}>
-              <span>
-                {isUploading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4 mr-2" />
-                )}
-                {t("Images.upload")}
-              </span>
-            </Button>
-          </label>
         </div>
 
         {/* 批量操作 */}
@@ -352,6 +280,7 @@ export default function ImagesPage() {
                       fill
                       className="object-cover"
                       sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                      unoptimized
                     />
                     {selectedImages.has(image.url) && (
                       <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
@@ -372,8 +301,11 @@ export default function ImagesPage() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatFileSize(image.size)}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {image.directoryName}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {image.lastModified}
+                    {dayjs(image.lastModified).format("YYYY-MM-DD HH:mm:ss")}
                   </p>
                 </CardContent>
                 <CardFooter className="p-3 pt-0 flex gap-2">
