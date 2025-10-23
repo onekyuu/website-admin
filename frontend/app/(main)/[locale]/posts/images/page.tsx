@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,8 @@ import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -24,17 +22,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
 import {
-  Loader2,
-  Trash2,
-  Upload,
-  X,
-  Search,
-  Image as ImageIcon,
-} from "lucide-react";
-import { uploadToOSS } from "@/lib/oss-upload";
-import { deleteFromOSS } from "@/lib/oss-delete";
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { toast } from "sonner";
+import { Loader2, Trash2, Search, Image as ImageIcon } from "lucide-react";
+import { useDeleteOSSImage, useDeleteOSSImages } from "@/hooks/useOSSDelete";
 import { get } from "@/lib/fetcher";
 import { PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -53,6 +52,7 @@ interface ListOSSImagesResponse {
   count: number;
   page: number;
   page_size: number;
+  total_pages: number;
 }
 
 export default function ImagesPage() {
@@ -60,12 +60,11 @@ export default function ImagesPage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
-  const [isUploading, setIsUploading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [imageToDelete, setImageToDelete] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 20,
   });
 
   const {
@@ -73,55 +72,26 @@ export default function ImagesPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["list-oss-images"],
-    queryFn: () =>
-      get<ListOSSImagesResponse>(
-        `/oss/images/list/?page=${pagination.pageIndex + 1}`,
-      ),
-  });
-  console.log("ossImagesList:", ossImagesList);
-
-  // 删除单个图片
-  const deleteMutation = useMutation({
-    mutationFn: async (imageUrl: string) => {
-      const success = await deleteFromOSS(imageUrl);
-      if (!success) {
-        throw new Error("Failed to delete image");
+    queryKey: [
+      "list-oss-images",
+      pagination.pageIndex,
+      pagination.pageSize,
+      searchQuery,
+    ],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        page: String(pagination.pageIndex + 1),
+        page_size: String(pagination.pageSize),
+      });
+      if (searchQuery) {
+        params.append("search", searchQuery);
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["oss-images"] });
-      toast.success(t("Images.deleteSuccess"));
-      setDeleteDialogOpen(false);
-      setImageToDelete(null);
-    },
-    onError: (error) => {
-      console.error("Delete error:", error);
-      toast.error(t("Images.deleteFailed"));
+      return get<ListOSSImagesResponse>(`/oss/images/list/?${params}`);
     },
   });
 
-  // 批量删除
-  const batchDeleteMutation = useMutation({
-    mutationFn: async (imageUrls: string[]) => {
-      const results = await Promise.allSettled(
-        imageUrls.map((url) => deleteFromOSS(url)),
-      );
-      const failedCount = results.filter((r) => r.status === "rejected").length;
-      if (failedCount > 0) {
-        throw new Error(`Failed to delete ${failedCount} images`);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["oss-images"] });
-      toast.success(t("Images.batchDeleteSuccess"));
-      setSelectedImages(new Set());
-    },
-    onError: (error) => {
-      console.error("Batch delete error:", error);
-      toast.error(t("Images.batchDeleteFailed"));
-    },
-  });
+  const deleteMutation = useDeleteOSSImage();
+  const batchDeleteMutation = useDeleteOSSImages();
 
   // 处理删除确认
   const handleDeleteClick = (imageUrl: string) => {
@@ -131,14 +101,25 @@ export default function ImagesPage() {
 
   const handleDeleteConfirm = () => {
     if (imageToDelete) {
-      deleteMutation.mutate(imageToDelete);
+      deleteMutation.mutate(imageToDelete, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setImageToDelete(null);
+          queryClient.invalidateQueries({ queryKey: ["list-oss-images"] });
+        },
+      });
     }
   };
 
   // 处理批量删除
   const handleBatchDelete = () => {
     if (selectedImages.size === 0) return;
-    batchDeleteMutation.mutate(Array.from(selectedImages));
+    batchDeleteMutation.mutate(Array.from(selectedImages), {
+      onSuccess: () => {
+        setSelectedImages(new Set());
+        queryClient.invalidateQueries({ queryKey: ["list-oss-images"] });
+      },
+    });
   };
 
   // 切换选中状态
@@ -174,6 +155,57 @@ export default function ImagesPage() {
     toast.success(t("Images.urlCopied"));
   };
 
+  // 处理分页
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      pageIndex: newPage,
+    }));
+    setSelectedImages(new Set()); // 清空选中状态
+  };
+
+  // 生成分页数组
+  const generatePaginationArray = () => {
+    const totalPages = ossImagesList?.total_pages || 0;
+    const currentPage = pagination.pageIndex;
+    const pages: (number | string)[] = [];
+
+    if (totalPages <= 7) {
+      // 总页数小于等于7，显示所有页码
+      for (let i = 0; i < totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // 总页数大于7，显示省略号
+      if (currentPage < 3) {
+        // 当前页在前面
+        for (let i = 0; i < 5; i++) {
+          pages.push(i);
+        }
+        pages.push("ellipsis");
+        pages.push(totalPages - 1);
+      } else if (currentPage > totalPages - 4) {
+        // 当前页在后面
+        pages.push(0);
+        pages.push("ellipsis");
+        for (let i = totalPages - 5; i < totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // 当前页在中间
+        pages.push(0);
+        pages.push("ellipsis");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push("ellipsis");
+        pages.push(totalPages - 1);
+      }
+    }
+
+    return pages;
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
@@ -189,7 +221,10 @@ export default function ImagesPage() {
           <Input
             placeholder={t("Images.searchPlaceholder")}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 })); // 搜索时重置到第一页
+            }}
             className="pl-10"
           />
         </div>
@@ -220,8 +255,10 @@ export default function ImagesPage() {
 
       {/* 统计信息 */}
       <div className="mb-6 text-sm text-muted-foreground">
-        {t("Images.totalImages")}: {ossImagesList?.results.length}
+        {t("Images.totalImages")}: {ossImagesList?.count || 0}
         {searchQuery && ` (${t("Images.filtered")})`}
+        {ossImagesList &&
+          ` · 第 ${ossImagesList.page} / ${ossImagesList.total_pages} 页`}
       </div>
 
       {/* 加载状态 */}
@@ -237,7 +274,7 @@ export default function ImagesPage() {
           <p className="text-destructive">{t("Images.loadError")}</p>
           <Button
             onClick={() =>
-              queryClient.invalidateQueries({ queryKey: ["oss-images"] })
+              queryClient.invalidateQueries({ queryKey: ["list-oss-images"] })
             }
             className="mt-4"
           >
@@ -261,83 +298,141 @@ export default function ImagesPage() {
         !error &&
         ossImagesList?.results &&
         ossImagesList.results.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {ossImagesList?.results.map((image) => (
-              <Card
-                key={image.url}
-                className={`overflow-hidden cursor-pointer transition-all ${
-                  selectedImages.has(image.url)
-                    ? "ring-2 ring-primary"
-                    : "hover:shadow-lg"
-                }`}
-                onClick={() => toggleImageSelection(image.url)}
-              >
-                <CardHeader className="p-0">
-                  <div className="relative aspect-square bg-muted">
-                    <Image
-                      src={image.url}
-                      alt={image.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                      unoptimized
-                    />
-                    {selectedImages.has(image.url) && (
-                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                          ✓
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {ossImagesList?.results.map((image) => (
+                <Card
+                  key={image.url}
+                  className={`overflow-hidden cursor-pointer transition-all ${
+                    selectedImages.has(image.url)
+                      ? "ring-2 ring-primary"
+                      : "hover:shadow-lg"
+                  }`}
+                  onClick={() => toggleImageSelection(image.url)}
+                >
+                  <CardHeader className="p-0">
+                    <div className="relative aspect-square bg-muted">
+                      <Image
+                        src={image.url}
+                        alt={image.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        unoptimized
+                      />
+                      {selectedImages.has(image.url) && (
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                            ✓
+                          </div>
                         </div>
-                      </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-3">
+                    <p
+                      className="text-xs font-medium truncate"
+                      title={image.name}
+                    >
+                      {image.name.split("/").pop()}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatFileSize(image.size)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {image.directoryName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {dayjs(image.lastModified).format("YYYY-MM-DD HH:mm:ss")}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="p-3 pt-0 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyImageUrl(image.url);
+                      }}
+                    >
+                      {t("Images.copy")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(image.url);
+                      }}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+
+            {/* 分页组件 */}
+            {ossImagesList.total_pages > 1 && (
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          pagination.pageIndex > 0 &&
+                          handlePageChange(pagination.pageIndex - 1)
+                        }
+                        className={
+                          pagination.pageIndex === 0
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+
+                    {generatePaginationArray().map((page, index) =>
+                      page === "ellipsis" ? (
+                        <PaginationItem key={`ellipsis-${index}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page as number)}
+                            isActive={pagination.pageIndex === page}
+                            className="cursor-pointer"
+                          >
+                            {(page as number) + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ),
                     )}
-                  </div>
-                </CardHeader>
-                <CardContent className="p-3">
-                  <p
-                    className="text-xs font-medium truncate"
-                    title={image.name}
-                  >
-                    {image.name.split("/").pop()}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatFileSize(image.size)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {image.directoryName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {dayjs(image.lastModified).format("YYYY-MM-DD HH:mm:ss")}
-                  </p>
-                </CardContent>
-                <CardFooter className="p-3 pt-0 flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyImageUrl(image.url);
-                    }}
-                  >
-                    {t("Images.copy")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(image.url);
-                    }}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          pagination.pageIndex <
+                            ossImagesList.total_pages - 1 &&
+                          handlePageChange(pagination.pageIndex + 1)
+                        }
+                        className={
+                          pagination.pageIndex >= ossImagesList.total_pages - 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         )}
 
-      {/* 删除确认对话框 */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -352,7 +447,7 @@ export default function ImagesPage() {
             <AlertDialogCancel>{t("Images.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-amber-50"
             >
               {deleteMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
