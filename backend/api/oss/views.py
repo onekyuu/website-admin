@@ -98,7 +98,6 @@ def list_oss_images(request):
 
         # 遍历对象列表的每一页
         for page_result in paginator.iter_page(req):
-            print(f"--- Page ---", page_result)
             if page_result.contents:
                 for obj in page_result.contents:
                     # 只处理文件（不是目录）
@@ -207,18 +206,36 @@ def delete_oss_image(request):
 
         client = oss.Client(cfg)
 
-        # 删除对象
-        result = client.delete_object(bucket_name, object_key)
-        
-        if result.status_code == 204:
+        try:
+            # 删除对象
+            result = client.delete_object(bucket_name, object_key)
+            
+            # alibabacloud-oss-v2 删除成功时返回 None 或者状态码 204
+            # 只要没有抛出异常就认为删除成功
+            print(f"[INFO] Successfully deleted: {object_key}, status: {getattr(result, 'status_code', 'N/A')}")
+            
             return JsonResponse({
                 'message': 'Image deleted successfully',
                 'object_key': object_key
             }, status=200)
-        else:
+            
+        except Exception as delete_error:
+            # 捕获 OSS 删除操作的具体错误
+            error_msg = str(delete_error)
+            print(f"[ERROR] OSS Delete Operation Failed: {error_msg}")
+            
+            # 判断是否是对象不存在的错误（这种情况也可以认为删除成功）
+            if 'NoSuchKey' in error_msg or 'does not exist' in error_msg:
+                return JsonResponse({
+                    'message': 'Image already deleted or does not exist',
+                    'object_key': object_key
+                }, status=200)
+            
+            # 其他错误返回失败
             return JsonResponse({
-                'error': 'Delete failed',
-                'status_code': result.status_code
+                'error': 'Delete operation failed',
+                'detail': error_msg,
+                'object_key': object_key
             }, status=500)
 
     except json.JSONDecodeError:
@@ -267,18 +284,27 @@ def delete_oss_images_batch(request):
         for object_key in object_keys:
             try:
                 result = client.delete_object(bucket_name, object_key)
-                if result.status_code == 204:
+                # 删除成功（没有抛出异常即为成功）
+                deleted_objects.append(object_key)
+                print(f"[INFO] Successfully deleted: {object_key}")
+                
+            except Exception as e:
+                error_msg = str(e)
+                
+                # 如果对象不存在，也认为删除成功
+                if 'NoSuchKey' in error_msg or 'does not exist' in error_msg:
                     deleted_objects.append(object_key)
+                    print(f"[INFO] Object already deleted or does not exist: {object_key}")
                 else:
+                    # 其他错误记录为失败
                     failed_objects.append({
                         'key': object_key,
-                        'error': f'Status code: {result.status_code}'
+                        'error': error_msg
                     })
-            except Exception as e:
-                failed_objects.append({
-                    'key': object_key,
-                    'error': str(e)
-                })
+                    print(f"[ERROR] Failed to delete {object_key}: {error_msg}")
+        
+        # 根据是否有失败项决定返回状态码
+        status_code = 200 if len(failed_objects) == 0 else 207  # 207 表示部分成功
         
         return JsonResponse({
             'message': f'Deleted {len(deleted_objects)} images',
@@ -287,7 +313,7 @@ def delete_oss_images_batch(request):
             'total_requested': len(object_keys),
             'total_deleted': len(deleted_objects),
             'total_failed': len(failed_objects)
-        }, status=200)
+        }, status=status_code)
 
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
