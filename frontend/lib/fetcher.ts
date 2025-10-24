@@ -180,12 +180,14 @@ export async function patch<T, D>(
  * @param endpoint API 路径（不需要包含 base URL）
  * @param options 额外的 fetch 配置
  */
-export async function del<T>(
+export async function del<T, D = unknown>(
   endpoint: string,
+  data?: D,
   options?: RequestInit,
 ): Promise<T> {
   return fetcher<T>(endpoint, {
     ...options,
     method: "DELETE",
+    body: data ? JSON.stringify(data) : undefined,
   });
 }

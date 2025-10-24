@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./constants";
+import { del } from "./fetcher";
 
 /**
  * 从完整 URL 中提取对象键
@@ -21,19 +21,10 @@ export async function deleteFromOSS(fileUrl: string): Promise<{
   try {
     const objectKey = extractObjectKey(fileUrl);
 
-    const response = await fetch(`${API_BASE_URL}/oss/images/delete/`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ object_key: objectKey }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || data.detail || "Delete failed");
-    }
+    const data = await del<{ message: string; object_key: string }>(
+      `/oss/images/delete/`,
+      { object_key: objectKey },
+    );
 
     console.log(`Successfully deleted: ${objectKey}`);
     return {
@@ -63,19 +54,14 @@ export async function deleteMultipleFromOSS(fileUrls: string[]): Promise<{
   try {
     const objectKeys = fileUrls.map(extractObjectKey);
 
-    const response = await fetch(`${API_BASE_URL}/oss/images/delete/batch/`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ object_keys: objectKeys }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || data.detail || "Batch delete failed");
-    }
+    const data = await del<{
+      message: string;
+      deleted: string[];
+      failed: Array<{ key: string; error: string }>;
+      total_requested: number;
+      total_deleted: number;
+      total_failed: number;
+    }>(`/oss/images/delete/batch/`, { object_keys: objectKeys });
 
     console.log(`Successfully deleted ${data.total_deleted} files`);
 

@@ -3,16 +3,16 @@ import os
 from urllib.parse import urlencode
 
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from aliyunsdkcore.client import AcsClient
 from aliyunsdksts.request.v20150401 import AssumeRoleRequest
 from aliyunsdkcore.profile import region_provider
 
 import alibabacloud_oss_v2 as oss
-from alibabacloud_oss_v2.models import ListObjectsV2Request
+from alibabacloud_oss_v2.models import ListObjectsV2Request, DeleteObjectRequest
 
 
 region_provider.modify_point('Sts', 'cn-hangzhou', 'sts.aliyuncs.com')
-
 
 def get_oss_credentials(request):
     access_key_id = os.getenv('ALIYUN_OSS_ACCESS_KEY_ID')
@@ -24,7 +24,7 @@ def get_oss_credentials(request):
         client = AcsClient(
             access_key_id,
             access_key_secret,
-            'cn-hangzhou',
+            'cn-shanghai',
             timeout=20
         )
 
@@ -56,7 +56,6 @@ def get_oss_credentials(request):
         })
 
     except Exception as e:
-        # 添加详细日志
         print(f"[ERROR] STS Request Failed: {str(e)}")
         return JsonResponse(
             {'error': 'STS Credential Generation Failed', 'detail': str(e)},
@@ -182,6 +181,8 @@ def list_oss_images(request):
             status=500
         )
 
+
+@csrf_exempt
 def delete_oss_image(request):
     if request.method != 'DELETE':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -196,23 +197,28 @@ def delete_oss_image(request):
         bucket_name = os.getenv('OSS_BUCKET')
         region = os.getenv('OSS_REGION')
         endpoint = f"https://{region}.aliyuncs.com"
+        actual_region = region.replace('oss-', '') if region.startswith('oss-') else region
 
         credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
 
         cfg = oss.config.load_default()
         cfg.credentials_provider = credentials_provider
-        cfg.region = region
+        cfg.region = actual_region
         cfg.endpoint = endpoint
 
         client = oss.Client(cfg)
 
         try:
-            # 删除对象
-            result = client.delete_object(bucket_name, object_key)
+            # 使用 DeleteObjectRequest 创建删除请求
+            delete_request = DeleteObjectRequest(
+                bucket=bucket_name,
+                key=object_key
+            )
             
-            # alibabacloud-oss-v2 删除成功时返回 None 或者状态码 204
-            # 只要没有抛出异常就认为删除成功
-            print(f"[INFO] Successfully deleted: {object_key}, status: {getattr(result, 'status_code', 'N/A')}")
+            # 执行删除操作
+            result = client.delete_object(delete_request)
+            
+            print(f"[INFO] Successfully deleted: {object_key}, status: {result.status_code if result else 'N/A'}")
             
             return JsonResponse({
                 'message': 'Image deleted successfully',
@@ -220,18 +226,16 @@ def delete_oss_image(request):
             }, status=200)
             
         except Exception as delete_error:
-            # 捕获 OSS 删除操作的具体错误
             error_msg = str(delete_error)
             print(f"[ERROR] OSS Delete Operation Failed: {error_msg}")
             
-            # 判断是否是对象不存在的错误（这种情况也可以认为删除成功）
+            # 判断是否是对象不存在的错误
             if 'NoSuchKey' in error_msg or 'does not exist' in error_msg:
                 return JsonResponse({
                     'message': 'Image already deleted or does not exist',
                     'object_key': object_key
                 }, status=200)
             
-            # 其他错误返回失败
             return JsonResponse({
                 'error': 'Delete operation failed',
                 'detail': error_msg,
@@ -250,6 +254,7 @@ def delete_oss_image(request):
         )
 
 
+@csrf_exempt
 def delete_oss_images_batch(request):
     if request.method != 'DELETE':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -267,12 +272,13 @@ def delete_oss_images_batch(request):
         bucket_name = os.getenv('OSS_BUCKET')
         region = os.getenv('OSS_REGION')
         endpoint = f"https://{region}.aliyuncs.com"
+        actual_region = region.replace('oss-', '') if region.startswith('oss-') else region
 
         credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
 
         cfg = oss.config.load_default()
         cfg.credentials_provider = credentials_provider
-        cfg.region = region
+        cfg.region = actual_region
         cfg.endpoint = endpoint
 
         client = oss.Client(cfg)
@@ -283,8 +289,13 @@ def delete_oss_images_batch(request):
         
         for object_key in object_keys:
             try:
-                result = client.delete_object(bucket_name, object_key)
-                # 删除成功（没有抛出异常即为成功）
+                # 使用 DeleteObjectRequest
+                delete_request = DeleteObjectRequest(
+                    bucket=bucket_name,
+                    key=object_key
+                )
+                
+                result = client.delete_object(delete_request)
                 deleted_objects.append(object_key)
                 print(f"[INFO] Successfully deleted: {object_key}")
                 
