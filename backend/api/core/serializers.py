@@ -52,6 +52,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
     role = RoleSerializer(read_only=True)
     role_id = serializers.PrimaryKeyRelatedField(
         queryset=Role.objects.all(),
@@ -70,6 +71,12 @@ class ProfileSerializer(serializers.ModelSerializer):
             'country', 'facebook', 'permissions'
         ]
         read_only_fields = ['id', 'user']
+
+    def get_user(self, obj):
+        return {
+            'username': obj.user.username,
+            'email': obj.user.email,
+        }
 
     def get_permissions(self, obj):
         return {

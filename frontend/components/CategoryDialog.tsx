@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { on } from "events";
 import { useTranslations } from "next-intl";
 import { FC, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -25,6 +24,7 @@ import { Input } from "./ui/input";
 import { uploadToOSS } from "@/lib/oss-upload";
 import { toast } from "sonner";
 import Image from "next/image";
+import { useAuthStore } from "@/lib/stores/auth";
 
 export type DialogMode = "create" | "edit";
 
@@ -48,6 +48,9 @@ const CategoryDialog: FC<{
   const isEditMode = mode === "edit";
   const dialogOpen = isEditMode ? editOpen : createOpen;
   const setDialogOpen = isEditMode ? setEditOpen : setCreateOpen;
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
 
   const formSchema = z.object({
     title: z.string({
@@ -179,7 +182,7 @@ const CategoryDialog: FC<{
               >
                 {t("Category.cancel")}
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={userPermissions?.is_guest}>
                 {isEditMode ? t("Category.update") : t("Category.submit")}
               </Button>
             </div>

@@ -9,9 +9,13 @@ import { DataTable } from "@/components/DataTable";
 import { toast } from "sonner";
 import Image from "next/image";
 import CategoryDialog, { Category } from "@/components/CategoryDialog";
+import { useAuthStore } from "@/lib/stores/auth";
 
 const CategoryPage: FC = () => {
   const t = useTranslations();
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
 
   const { data: categories, refetch } = useQuery({
     queryKey: ["categories"],
@@ -156,6 +160,7 @@ const CategoryPage: FC = () => {
               console.log("Delete", row.original);
               await deleteMutation.mutate(row.original.id);
             }}
+            disabled={userPermissions?.is_guest}
           >
             {t("Category.delete")}
           </Button>

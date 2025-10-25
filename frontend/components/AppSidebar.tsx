@@ -30,7 +30,7 @@ import { useEffect, useMemo } from "react";
 import { NavSecondary } from "./NavSecondary";
 import { Link } from "@/i18n/navigations";
 import { useTranslations } from "next-intl";
-import { useAuthStore } from "@/lib/stores/auth";
+import { Permissions, useAuthStore } from "@/lib/stores/auth";
 
 export function AppSidebar() {
   const t = useTranslations();
@@ -46,10 +46,13 @@ export function AppSidebar() {
         id: number;
         is_superuser: boolean;
         avatar: string;
+        role_name: string | null;
+        permissions: Permissions | null;
       }>(`/user/profile/${userId}/`),
   });
 
   useEffect(() => {
+    console.log("Fetched User Profile:", userProfile);
     if (userProfile) {
       useAuthStore.getState().setUser({
         user_id: userProfile.id.toString(),
@@ -57,6 +60,8 @@ export function AppSidebar() {
         avatar: userProfile.avatar,
         username: userProfile.user.username || null,
         email: userProfile.user.email || null,
+        role_name: userProfile.role_name || null,
+        permissions: userProfile.permissions || null,
       });
     }
   }, [userProfile]);
