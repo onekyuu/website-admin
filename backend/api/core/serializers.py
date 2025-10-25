@@ -62,15 +62,16 @@ class ProfileSerializer(serializers.ModelSerializer):
     )
     permissions = serializers.SerializerMethodField()
     role_name = serializers.CharField(source='role.name', read_only=True)
+    is_superuser = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = [
             'id', 'user', 'role', 'role_id', 'role_name', 'avatar',
             'full_name', 'bio', 'about', 'author',
-            'country', 'facebook', 'permissions'
+            'country', 'facebook', 'permissions', 'is_superuser'
         ]
-        read_only_fields = ['id', 'user']
+        read_only_fields = ['id', 'user', 'is_superuser']
 
     def get_user(self, obj):
         return {
@@ -88,6 +89,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             'is_guest': obj.is_guest,
             'is_admin': obj.is_admin,
         }
+
+    def get_is_superuser(self, obj):
+        return obj.user.is_superuser
 
 
 class UserSerializer(serializers.ModelSerializer):

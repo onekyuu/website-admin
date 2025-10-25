@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import { uploadToOSS } from "@/lib/oss-upload";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Permission, useAuthStore } from "@/lib/stores/auth";
+import { Permissions, useAuthStore } from "@/lib/stores/auth";
 import { patch } from "@/lib/fetcher";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -33,7 +33,7 @@ interface UserProfile {
     email: string;
   };
   role_name: string | null;
-  permissions: Permission[];
+  permissions: Permissions | null;
 }
 
 export default function AccountPage() {
@@ -74,7 +74,7 @@ export default function AccountPage() {
         username: data.user.username || null,
         email: data.user.email || null,
         role_name: data.role_name || null,
-        permissions: data.permissions || [],
+        permissions: data.permissions || null,
       });
     },
     onError: (error) => {
