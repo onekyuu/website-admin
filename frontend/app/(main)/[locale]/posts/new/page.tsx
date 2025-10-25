@@ -20,6 +20,7 @@ import {
   LanguageCode,
   PostFormInitialData,
 } from "../types";
+import { useAuthStore } from "@/lib/stores/auth";
 
 const PostCreatePage = () => {
   const params = useParams();
@@ -27,6 +28,9 @@ const PostCreatePage = () => {
   const t = useTranslations();
   const router = useRouter();
   const userId = useUserData()?.user_id;
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
   const [newPost, setNewPost] = useImmer<CreatePostData>({
     category: undefined,
     user_id: parseInt(userId || ""),
@@ -99,7 +103,7 @@ const PostCreatePage = () => {
             <Button
               key={"save-post"}
               onClick={handleSave}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || userPermissions?.is_guest}
             >
               {mutation.isPending && <Loader2 className="animate-spin" />}
               {t("Common.save")}

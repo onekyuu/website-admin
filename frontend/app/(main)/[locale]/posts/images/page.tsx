@@ -37,6 +37,7 @@ import { useDeleteOSSImage, useDeleteOSSImages } from "@/hooks/useOSSDelete";
 import { get } from "@/lib/fetcher";
 import { PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { useAuthStore } from "@/lib/stores/auth";
 
 interface OSSImage {
   name: string;
@@ -66,6 +67,9 @@ export default function ImagesPage() {
     pageIndex: 0,
     pageSize: 20,
   });
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
 
   const {
     data: ossImagesList,
@@ -240,7 +244,9 @@ export default function ImagesPage() {
             <Button
               variant="destructive"
               onClick={handleBatchDelete}
-              disabled={batchDeleteMutation.isPending}
+              disabled={
+                batchDeleteMutation.isPending || userPermissions?.is_guest
+              }
             >
               {batchDeleteMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -351,6 +357,7 @@ export default function ImagesPage() {
                       size="sm"
                       variant="outline"
                       className="flex-1 text-xs cursor-pointer"
+                      disabled={userPermissions?.is_guest}
                       onClick={(e) => {
                         e.stopPropagation();
                         copyImageUrl(image.url);
@@ -366,7 +373,9 @@ export default function ImagesPage() {
                         e.stopPropagation();
                         handleDeleteClick(image.url);
                       }}
-                      disabled={deleteMutation.isPending}
+                      disabled={
+                        deleteMutation.isPending || userPermissions?.is_guest
+                      }
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>

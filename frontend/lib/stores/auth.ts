@@ -6,12 +6,23 @@ import { create } from "zustand";
 import { mountStoreDevtool } from "simple-zustand-devtools";
 import { persist } from "zustand/middleware";
 
+export interface Permissions {
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  can_publish: boolean;
+  can_manage_users: boolean;
+  is_guest: boolean;
+  is_admin: boolean;
+}
 export interface AuthUserState {
   user_id: string | null;
   username: string | null;
   email: string | null;
   avatar?: string | null;
   is_superuser?: boolean;
+  role_name: string | null;
+  permissions: Permissions | null;
 }
 
 interface AuthState {
@@ -40,6 +51,8 @@ const useAuthStore = create<AuthState>()(
         email: get().allUserData?.email || null,
         avatar: get().allUserData?.avatar || null,
         is_superuser: get().allUserData?.is_superuser || false,
+        role_name: get().allUserData?.role_name || null,
+        permissions: get().allUserData?.permissions || null,
       }),
 
       // Define a function 'setUser' that allows setting the 'allUserData' state.

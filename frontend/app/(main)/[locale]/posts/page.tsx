@@ -17,6 +17,9 @@ const PostPage = () => {
   const t = useTranslations();
   const locale = useLocale() as LanguageCode;
   const userId = useAuthStore((state) => state.allUserData)?.user_id;
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
   const router = useRouter();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -117,6 +120,7 @@ const PostPage = () => {
             onClick={() => {
               router.push(`/posts/${row.original.slug}/edit`);
             }}
+            disabled={userPermissions?.is_guest}
           >
             {t("Post.edit")}
           </Button>
@@ -126,6 +130,7 @@ const PostPage = () => {
             onClick={() => {
               onDeletePost(row.original.id);
             }}
+            disabled={userPermissions?.is_guest}
           >
             {t("Post.delete")}
           </Button>
