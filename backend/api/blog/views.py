@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import APIView
 from rest_framework.response import Response
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from drf_yasg.utils import swagger_auto_schema
@@ -28,7 +28,8 @@ from api.blog.models import Bookmark, Category, Comment, Notification, Post, Pos
 from api.blog.serializers import CategorySerializer, CommentSerializer, DashboardSerializer, NotificationSerializer, PostSerializer
 from api.core.models import User
 from api.core.pagination import StandardResultsSetPagination
-from api.core.permissions import IsOwnerOrReadOnly
+from api.core.permissions import IsOwnerOrReadOnly, IsNotGuest, CanCreate, CanEdit, CanDelete, IsAdminOrReadOnly
+
 
 client = OpenAI(
     # This is the default and can be omitted
@@ -39,7 +40,7 @@ client = OpenAI(
 
 class CategoryCreateApiView(generics.CreateAPIView):
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanCreate]
 
     def perform_create(self, serializer):
         # 将当前登录用户设置为创建者
@@ -48,7 +49,7 @@ class CategoryCreateApiView(generics.CreateAPIView):
 
 class CategoryUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]  # 确保只有创建者可以修改
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]  # 确保只有创建者可以修改
 
     def get_object(self):
         category_id = self.kwargs['category_id']
@@ -524,3 +525,34 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
             return Response({"message": "Post updated"}, status=status.HTTP_200_OK)
         else:
             return Response({"message": "No changes detected"}, status=status.HTTP_200_OK)
+
+
+class PostViewSet(viewsets.ModelViewSet):
+    serializer_class = PostSerializer
+    permission_classes = [AllowAny]
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        return Post.objects.filter(status='Active')
+
+    def get_permissions(self):
+        """
+        根据不同的操作设置不同的权限
+        """
+        if self.action in ['list', 'retrieve']:
+            # 列表和详情允许所有已认证用户访问
+            permission_classes = [IsAuthenticated]
+        elif self.action == 'create':
+            # 创建需要创建权限
+            permission_classes = [IsAuthenticated, CanCreate]
+        elif self.action in ['update', 'partial_update']:
+            # 更新需要编辑权限
+            permission_classes = [IsAuthenticated, CanEdit]
+        elif self.action == 'destroy':
+            # 删除需要删除权限
+            permission_classes = [IsAuthenticated, CanDelete]
+        else:
+            # 其他操作需要非访客权限
+            permission_classes = [IsAuthenticated, IsNotGuest]
+
+        return [permission() for permission in permission_classes]

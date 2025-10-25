@@ -4,6 +4,9 @@ from urllib.parse import urlencode
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from api.core.permissions import CanDelete
 from aliyunsdkcore.client import AcsClient
 from aliyunsdksts.request.v20150401 import AssumeRoleRequest
 from aliyunsdkcore.profile import region_provider
@@ -13,6 +16,7 @@ from alibabacloud_oss_v2.models import ListObjectsV2Request, DeleteObjectRequest
 
 
 region_provider.modify_point('Sts', 'cn-hangzhou', 'sts.aliyuncs.com')
+
 
 def get_oss_credentials(request):
     access_key_id = os.getenv('ALIYUN_OSS_ACCESS_KEY_ID')
@@ -62,6 +66,7 @@ def get_oss_credentials(request):
             status=500
         )
 
+
 def list_oss_images(request):
     bucket_name = os.getenv('OSS_BUCKET')
     region = os.getenv('OSS_REGION')
@@ -90,10 +95,10 @@ def list_oss_images(request):
         )
 
         paginator = client.list_objects_v2_paginator()
-                
-        all_images = []
-        image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico']
 
+        all_images = []
+        image_extensions = ['.jpg', '.jpeg', '.png',
+                            '.gif', '.webp', '.svg', '.bmp', '.ico']
 
         # 遍历对象列表的每一页
         for page_result in paginator.iter_page(req):
@@ -108,7 +113,7 @@ def list_oss_images(request):
                                 continue
 
                             path_parts = obj.key.split('/')
-                            
+
                             # 移除前缀和文件名，获取中间的目录部分
                             if len(path_parts) > 2:
                                 # 如果有多级目录，取除了 prefix 和文件名外的所有部分
@@ -122,7 +127,7 @@ def list_oss_images(request):
                             else:
                                 directory = ''
                                 directory_name = ''
-                            
+
                             all_images.append({
                                 'name': obj.key,
                                 'url': f"https://{bucket_name}.{region}.aliyuncs.com/{obj.key}",
@@ -131,7 +136,7 @@ def list_oss_images(request):
                                 'etag': obj.etag,
                                 'directory': directory,  # 完整目录路径（不含 uploads/ 前缀）
                                 'directoryName': directory_name,  # 所在目录名称
-                                'fileName': path_parts[-1], 
+                                'fileName': path_parts[-1],
                             })
                 # 按最后修改时间倒序排序
         all_images.sort(key=lambda x: x['lastModified'] or '', reverse=True)
@@ -140,15 +145,15 @@ def list_oss_images(request):
         total_count = len(all_images)
         start_index = (page - 1) * page_size
         end_index = start_index + page_size
-        
+
         paginated_images = all_images[start_index:end_index]
-        
+
         # 计算分页信息
         has_next = end_index < total_count
         has_previous = page > 1
-        
+
         base_url = request.build_absolute_uri(request.path)
-        
+
         def build_page_url(page_num):
             params = {
                 'page': page_num,
@@ -158,7 +163,7 @@ def list_oss_images(request):
             if search:
                 params['search'] = search
             return f"{base_url}?{urlencode(params)}"
-        
+
         next_url = build_page_url(page + 1) if has_next else None
         previous_url = build_page_url(page - 1) if has_previous else None
 
@@ -183,21 +188,24 @@ def list_oss_images(request):
 
 
 @csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, CanDelete])
 def delete_oss_image(request):
     if request.method != 'DELETE':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         object_key = data.get('object_key')
-        
+
         if not object_key:
             return JsonResponse({'error': 'object_key is required'}, status=400)
-        
+
         bucket_name = os.getenv('OSS_BUCKET')
         region = os.getenv('OSS_REGION')
         endpoint = f"https://{region}.aliyuncs.com"
-        actual_region = region.replace('oss-', '') if region.startswith('oss-') else region
+        actual_region = region.replace(
+            'oss-', '') if region.startswith('oss-') else region
 
         credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
 
@@ -214,28 +222,29 @@ def delete_oss_image(request):
                 bucket=bucket_name,
                 key=object_key
             )
-            
+
             # 执行删除操作
             result = client.delete_object(delete_request)
-            
-            print(f"[INFO] Successfully deleted: {object_key}, status: {result.status_code if result else 'N/A'}")
-            
+
+            print(
+                f"[INFO] Successfully deleted: {object_key}, status: {result.status_code if result else 'N/A'}")
+
             return JsonResponse({
                 'message': 'Image deleted successfully',
                 'object_key': object_key
             }, status=200)
-            
+
         except Exception as delete_error:
             error_msg = str(delete_error)
             print(f"[ERROR] OSS Delete Operation Failed: {error_msg}")
-            
+
             # 判断是否是对象不存在的错误
             if 'NoSuchKey' in error_msg or 'does not exist' in error_msg:
                 return JsonResponse({
                     'message': 'Image already deleted or does not exist',
                     'object_key': object_key
                 }, status=200)
-            
+
             return JsonResponse({
                 'error': 'Delete operation failed',
                 'detail': error_msg,
@@ -255,24 +264,27 @@ def delete_oss_image(request):
 
 
 @csrf_exempt
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, CanDelete])
 def delete_oss_images_batch(request):
     if request.method != 'DELETE':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         object_keys = data.get('object_keys', [])
-        
+
         if not object_keys or not isinstance(object_keys, list):
             return JsonResponse({'error': 'object_keys must be a non-empty array'}, status=400)
-        
+
         if len(object_keys) > 1000:
             return JsonResponse({'error': 'Maximum 1000 objects can be deleted at once'}, status=400)
-        
+
         bucket_name = os.getenv('OSS_BUCKET')
         region = os.getenv('OSS_REGION')
         endpoint = f"https://{region}.aliyuncs.com"
-        actual_region = region.replace('oss-', '') if region.startswith('oss-') else region
+        actual_region = region.replace(
+            'oss-', '') if region.startswith('oss-') else region
 
         credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
 
@@ -286,7 +298,7 @@ def delete_oss_images_batch(request):
         # 批量删除对象
         deleted_objects = []
         failed_objects = []
-        
+
         for object_key in object_keys:
             try:
                 # 使用 DeleteObjectRequest
@@ -294,29 +306,31 @@ def delete_oss_images_batch(request):
                     bucket=bucket_name,
                     key=object_key
                 )
-                
+
                 result = client.delete_object(delete_request)
                 deleted_objects.append(object_key)
                 print(f"[INFO] Successfully deleted: {object_key}")
-                
+
             except Exception as e:
                 error_msg = str(e)
-                
+
                 # 如果对象不存在，也认为删除成功
                 if 'NoSuchKey' in error_msg or 'does not exist' in error_msg:
                     deleted_objects.append(object_key)
-                    print(f"[INFO] Object already deleted or does not exist: {object_key}")
+                    print(
+                        f"[INFO] Object already deleted or does not exist: {object_key}")
                 else:
                     # 其他错误记录为失败
                     failed_objects.append({
                         'key': object_key,
                         'error': error_msg
                     })
-                    print(f"[ERROR] Failed to delete {object_key}: {error_msg}")
-        
+                    print(
+                        f"[ERROR] Failed to delete {object_key}: {error_msg}")
+
         # 根据是否有失败项决定返回状态码
         status_code = 200 if len(failed_objects) == 0 else 207  # 207 表示部分成功
-        
+
         return JsonResponse({
             'message': f'Deleted {len(deleted_objects)} images',
             'deleted': deleted_objects,

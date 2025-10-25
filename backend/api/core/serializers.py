@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.password_validation import validate_password
-from api.core.models import User, Profile
+from api.core.models import User, Profile, Role
 from api.core.utils import get_file_url
 
 
@@ -16,7 +16,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password = serializers.CharField(
+        write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
@@ -25,7 +26,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            raise serializers.ValidationError(
+                {"password": "Password fields didn't match."})
         return attrs
 
     def create(self, validated_data):
@@ -38,32 +40,53 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-class UserSerializer(serializers.ModelSerializer):
-    avatar = serializers.SerializerMethodField()
-
+class RoleSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'full_name', 'avatar']
-
-    def get_avatar(self, obj):
-        profile = getattr(obj, 'profile', None)
-        if profile and profile.avatar:
-            return get_file_url(profile, 'avatar', self.context.get('request'))
-        return None
+        model = Role
+        fields = [
+            'id', 'name', 'display_name', 'description',
+            'can_create', 'can_edit', 'can_delete',
+            'can_publish', 'can_manage_users'
+        ]
+        read_only_fields = ['id']
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    is_superuser = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+    role = RoleSerializer(read_only=True)
+    role_id = serializers.PrimaryKeyRelatedField(
+        queryset=Role.objects.all(),
+        source='role',
+        write_only=True,
+        required=False
+    )
+    permissions = serializers.SerializerMethodField()
+    role_name = serializers.CharField(source='role.name', read_only=True)
 
     class Meta:
         model = Profile
-        fields = "__all__"
-        read_only_fields = ('user',)
+        fields = [
+            'id', 'user', 'role', 'role_id', 'role_name', 'avatar',
+            'full_name', 'bio', 'about', 'author',
+            'country', 'facebook', 'permissions'
+        ]
+        read_only_fields = ['id', 'user']
 
-    def get_is_superuser(self, obj):
-        return obj.user.is_superuser
+    def get_permissions(self, obj):
+        return {
+            'can_create': obj.can_create,
+            'can_edit': obj.can_edit,
+            'can_delete': obj.can_delete,
+            'can_publish': obj.can_publish,
+            'can_manage_users': obj.can_manage_users,
+            'is_guest': obj.is_guest,
+            'is_admin': obj.is_admin,
+        }
 
-    def get_avatar(self, obj):
-        return get_file_url(obj, 'avatar', self.context.get('request'))
+
+class UserSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'full_name', 'profile']
+        read_only_fields = ['id']
