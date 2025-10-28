@@ -155,7 +155,11 @@ export default function AccountPage() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full">
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={userInfo?.is_superuser}
+          >
             {t("save")}
           </Button>
         </form>

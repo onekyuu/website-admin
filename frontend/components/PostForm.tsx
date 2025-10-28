@@ -31,6 +31,7 @@ import { uploadToOSS } from "@/lib/oss-upload";
 import { X } from "lucide-react";
 import { deleteFromOSS } from "@/lib/oss-delete";
 import { toast } from "sonner";
+import { useAuthStore } from "@/lib/stores/auth";
 
 interface PostFormProps {
   mode: "create" | "edit";
@@ -49,6 +50,9 @@ export const PostForm: React.FC<PostFormProps> = ({
   const [imagePreview, setImagePreview] = useState<string | undefined>(
     initialValues?.image,
   );
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -233,6 +237,10 @@ export const PostForm: React.FC<PostFormProps> = ({
                         accept="image/*"
                         placeholder={t("Post.imagePlaceholder")}
                         onChange={async (e) => {
+                          if (userPermissions?.is_guest) {
+                            toast.error(t("Post.guestImageUploadInfo"));
+                            return;
+                          }
                           const file = e.target.files?.[0];
                           if (file) {
                             try {

@@ -14,6 +14,7 @@ const Post = {
   deleteError: "Error deleting post",
   imageLabel: "Post Cover Image",
   imagePlaceholder: "Input post cover image URL",
+  guestImageUploadInfo: "Guest users cannot upload images",
 };
 
 export default Post;
