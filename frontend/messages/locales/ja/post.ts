@@ -14,6 +14,7 @@ const Post = {
   deleteError: "投稿の削除中にエラーが発生しました",
   imageLabel: "投稿カバー画像",
   imagePlaceholder: "投稿カバー画像のURLを入力してください",
+  guestImageUploadInfo: "ゲストユーザーは画像をアップロードできません",
 };
 
 export default Post;

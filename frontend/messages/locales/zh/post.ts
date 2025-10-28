@@ -14,6 +14,7 @@ const Post = {
   deleteError: "删除文章时出错",
   imageLabel: "文章封面图片",
   imagePlaceholder: "请输入文章封面图片URL",
+  guestImageUploadInfo: "访客用户无法上传图片",
 };
 
 export default Post;
