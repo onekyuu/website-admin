@@ -83,6 +83,7 @@ const PostEditPage = () => {
         content: data.content || "",
       };
       draft.category = data.category ? parseInt(data.category) : undefined;
+      draft.image = data.image || "";
     });
   };
 

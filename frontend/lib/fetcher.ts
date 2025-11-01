@@ -65,17 +65,20 @@ export async function fetcher<T>(
   options: RequestInit = {},
 ): Promise<T> {
   let accessToken = Cookies.get("access_token");
+  const isFormData = options.body instanceof FormData;
 
   // token expired, refresh it
   if (isAccessTokenExpired(accessToken)) {
     accessToken = (await refreshAccessToken()) || undefined;
   }
 
-  const headers = {
-    ...(options.headers || {}),
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
+  const headers = isFormData
+    ? options.headers || {}
+    : {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(options.headers || {}),
+      };
 
   if (accessToken) {
     (headers as Record<string, string>)["Authorization"] =
@@ -150,10 +153,11 @@ export async function post<T, D>(
   data?: D,
   options?: RequestInit,
 ): Promise<T> {
+  const isFormData = data instanceof FormData;
   return fetcher<T>(endpoint, {
     ...options,
     method: "POST",
-    body: data ? JSON.stringify(data) : undefined,
+    body: isFormData ? data : data ? JSON.stringify(data) : undefined,
   });
 }
 

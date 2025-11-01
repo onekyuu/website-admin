@@ -461,14 +461,14 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
         post_instance = self.get_object()
         updated = False  # 标记是否有修改
 
-        # image = data.get("image")
+        image = data.get("image")
         # tags = data.get("tags")
         category_id = data.get("category")
         # post_status = data.get("status")
 
-        # if image != 'undefined' and image != post_instance.image:
-        #     post_instance.image = image
-        #     updated = True
+        if image != 'undefined' and image != post_instance.image:
+            post_instance.image = image
+            updated = True
         # if tags != post_instance.tags:
         #     post_instance.tags = tags
         #     updated = True
