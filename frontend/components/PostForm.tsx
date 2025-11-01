@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { ControllerRenderProps, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { get } from "@/lib/fetcher";
+import { get, post } from "@/lib/fetcher";
 import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
 import {
   Form,
@@ -27,11 +27,10 @@ import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { PostFormInitialData } from "@/app/(main)/[locale]/posts/types";
-import { uploadToOSS } from "@/lib/oss-upload";
-import { X } from "lucide-react";
 import { deleteFromOSS } from "@/lib/oss-delete";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/stores/auth";
+import { X } from "lucide-react";
 
 interface PostFormProps {
   mode: "create" | "edit";
@@ -39,6 +38,19 @@ interface PostFormProps {
   initialValues?: PostFormInitialData;
   onChange: (data: PostFormInitialData) => void;
 }
+
+const uploadImageToOSS = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("directory", "uploads/blog");
+
+  const response = await post<{ data: { url: string } }, FormData>(
+    "/oss/images/upload/",
+    formData,
+  );
+  console.log("Upload response:", response);
+  return response.data.url;
+};
 
 export const PostForm: React.FC<PostFormProps> = ({
   mode,
@@ -50,6 +62,7 @@ export const PostForm: React.FC<PostFormProps> = ({
   const [imagePreview, setImagePreview] = useState<string | undefined>(
     initialValues?.image,
   );
+  const [uploading, setUploading] = useState(false);
   const userPermissions = useAuthStore(
     (state) => state.allUserData,
   )?.permissions;
@@ -106,6 +119,37 @@ export const PostForm: React.FC<PostFormProps> = ({
     } catch (error) {
       console.error("Delete error:", error);
       toast.error(t("Post.imageDeleteFailed"));
+    }
+  };
+
+  const handleImageUpload = async (
+    file: File,
+    onChange: (value: string) => void,
+    value?: string,
+  ) => {
+    if (userPermissions?.is_guest) {
+      toast.error(t("Post.guestImageUploadInfo"));
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const oldImage = value;
+      if (oldImage) {
+        await deleteFromOSS(oldImage);
+      }
+
+      const imageURL = await uploadImageToOSS(file);
+      console.log("Uploaded image URL:", imageURL);
+
+      onChange(imageURL);
+      setImagePreview(imageURL);
+      toast.success(t("Post.imageUploadSuccess"));
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error(t("Post.imageUploadFailed"));
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -235,30 +279,17 @@ export const PostForm: React.FC<PostFormProps> = ({
                       <Input
                         type="file"
                         accept="image/*"
+                        disabled={uploading}
                         placeholder={t("Post.imagePlaceholder")}
                         onChange={async (e) => {
-                          if (userPermissions?.is_guest) {
-                            toast.error(t("Post.guestImageUploadInfo"));
-                            return;
-                          }
                           const file = e.target.files?.[0];
                           if (file) {
-                            try {
-                              const oldImage = field.value;
-                              if (oldImage) {
-                                await deleteFromOSS(oldImage);
-                              }
-
-                              const imageURL = await uploadToOSS(file);
-                              field.onChange(imageURL);
-                              setImagePreview(imageURL);
-                              toast.success(t("Post.imageUploadSuccess"));
-
-                              e.target.value = "";
-                            } catch (error) {
-                              console.error("Upload failed:", error);
-                              toast.error(t("Post.imageUploadFailed"));
-                            }
+                            await handleImageUpload(
+                              file,
+                              field.onChange,
+                              field.value,
+                            );
+                            e.target.value = "";
                           }
                         }}
                       />

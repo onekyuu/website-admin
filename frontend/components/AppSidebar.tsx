@@ -31,6 +31,7 @@ import { NavSecondary } from "./NavSecondary";
 import { Link } from "@/i18n/navigations";
 import { useTranslations } from "next-intl";
 import { Permissions, useAuthStore } from "@/lib/stores/auth";
+import { title } from "process";
 
 export function AppSidebar() {
   const t = useTranslations();
@@ -106,6 +107,16 @@ export function AppSidebar() {
       title: "Category",
       url: "/category",
       icon: <ChartBarStacked className="size-4" />,
+    },
+    {
+      title: "Projects",
+      url: "/projects",
+      icon: <Boxes className="size-4" />,
+    },
+    {
+      title: "Gallery",
+      url: "/gallery",
+      icon: <Boxes className="size-4" />,
     },
   ];
   const navSecondary = [
