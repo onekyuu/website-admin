@@ -302,7 +302,6 @@ export const PostForm: React.FC<PostFormProps> = ({
                           width={400}
                           height={300}
                           className="rounded-md object-cover"
-                          unoptimized
                         />
                         <X
                           className="cursor-pointer w-5 h-5 absolute top-0 right-0"

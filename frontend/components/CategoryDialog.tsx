@@ -145,7 +145,6 @@ const CategoryDialog: FC<{
                           src={field.value}
                           alt="Preview"
                           className="rounded-md object-cover h-full"
-                          unoptimized
                         />
                       </div>
                     )}
