@@ -7,11 +7,8 @@ const config: NextConfig = {
   output: "standalone",
   turbopack: {},
   images: {
+    unoptimized: true,
     remotePatterns: [
-      // {
-      //   protocol: "http",
-      //   hostname: "onekyuu-blog.oss-cn-shanghai.aliyuncs.com",
-      // },
       {
         protocol: "https",
         hostname: "onekyuu-blog.oss-cn-shanghai.aliyuncs.com",

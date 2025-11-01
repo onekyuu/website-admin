@@ -143,7 +143,6 @@ const CategoryPage: FC = () => {
               src={row.original.image}
               alt="Image"
               className="rounded-md object-cover h-full"
-              unoptimized
             />
           </div>
         ),

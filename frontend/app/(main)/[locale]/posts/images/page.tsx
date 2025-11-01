@@ -324,7 +324,6 @@ export default function ImagesPage() {
                         fill
                         className="object-cover"
                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                        unoptimized
                       />
                       {selectedImages.has(image.url) && (
                         <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
