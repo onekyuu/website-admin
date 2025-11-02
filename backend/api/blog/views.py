@@ -3,7 +3,6 @@ from django.db.models.functions import TruncMonth, TruncDay
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
-
 # Restframework
 from rest_framework import status
 from rest_framework.decorators import APIView
@@ -13,14 +12,14 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from drf_yasg.utils import swagger_auto_schema
 from datetime import timedelta
-
 from dateutil.relativedelta import relativedelta
-
 
 from openai import OpenAI
 import os
-import json
+import time
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
+import logging
 
 # Custom Imports
 from api.blog.models import Bookmark, Category, Comment, Notification, Post, PostTranslation
@@ -29,12 +28,159 @@ from api.core.models import User
 from api.core.pagination import StandardResultsSetPagination
 from api.core.permissions import IsOwnerOrReadOnly, IsNotGuest, CanCreate, CanEdit, CanDelete, IsAdminOrReadOnly
 
+logger = logging.getLogger(__name__)
 
+# 创建线程池
+translator_executor = ThreadPoolExecutor(max_workers=3)
+
+# OpenAI 客户端配置
 client = OpenAI(
-    # This is the default and can be omitted
     api_key=os.environ.get("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com"
+    base_url="https://api.deepseek.com",
+    timeout=90.0
 )
+
+
+def call_openai_translate(text, target_lang, source_lang="zh"):
+    """使用 DeepSeek 接口翻译，带超时和重试"""
+    if not text or not text.strip():
+        return ""
+
+    max_length = 2000
+    if len(text) > max_length:
+        text = text[:max_length]
+
+    prompt = f"请将以下文本从{source_lang}翻译为{target_lang}，只返回翻译结果：\n{text}"
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": "你是一个专业的翻译助手，只返回翻译结果"},
+                    {"role": "user", "content": prompt}
+                ],
+                timeout=60.0
+            )
+            return response.choices[0].message.content.strip()
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep((attempt + 1) * 2)
+            else:
+                logger.error(
+                    f"Translation failed after {max_retries} attempts: {str(e)}")
+                raise
+
+    return ""
+
+
+def translate_rich_text(html, target_lang, source_lang="zh"):
+    """翻译 HTML 富文本，分段处理"""
+    if not html or not html.strip():
+        return ""
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    text_segments = []
+    text_nodes = []
+
+    for tag in soup.find_all(string=True):
+        text = tag.strip()
+        if text:
+            text_segments.append(text)
+            text_nodes.append(tag)
+
+    if not text_segments:
+        return str(soup)
+
+    try:
+        total_length = sum(len(s) for s in text_segments)
+
+        if total_length < 1500:
+            # 批量翻译
+            combined_text = "\n###SPLIT###\n".join(text_segments)
+            prompt = f"请将以下文本从{source_lang}翻译为{target_lang}，保持 ###SPLIT### 分隔符：\n{combined_text}"
+
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": "你是一个专业的翻译助手"},
+                    {"role": "user", "content": prompt}
+                ],
+                timeout=90.0
+            )
+
+            translated_segments = response.choices[0].message.content.strip().split(
+                "\n###SPLIT###\n")
+
+            for i, tag in enumerate(text_nodes):
+                if i < len(translated_segments):
+                    tag.replace_with(translated_segments[i])
+
+            return str(soup)
+        else:
+            # 逐段翻译
+            for tag in text_nodes:
+                try:
+                    translated = call_openai_translate(
+                        tag.strip(), target_lang, source_lang)
+                    tag.replace_with(translated)
+                except Exception:
+                    continue
+
+            return str(soup)
+
+    except Exception as e:
+        logger.error(f"Rich text translation failed: {str(e)}")
+        return str(soup)
+
+
+def translate_post_background(post_id, lang_code, source_lang, source_data):
+    """后台翻译任务"""
+    try:
+        translated_title = call_openai_translate(
+            source_data.get("title", ""),
+            lang_code,
+            source_lang
+        )
+
+        translated_description = ""
+        if source_data.get("description"):
+            translated_description = call_openai_translate(
+                source_data["description"],
+                lang_code,
+                source_lang
+            )
+
+        translated_content = ""
+        if source_data.get("content"):
+            translated_content = translate_rich_text(
+                source_data["content"],
+                lang_code,
+                source_lang
+            )
+
+        post = Post.objects.get(id=post_id)
+
+        PostTranslation.objects.update_or_create(
+            post=post,
+            language=lang_code,
+            defaults={
+                'title': translated_title,
+                'description': translated_description,
+                'content': translated_content,
+                'is_ai_generated': True
+            }
+        )
+
+        return True
+
+    except Exception as e:
+        logger.error(
+            f"Background translation failed for {lang_code}: {str(e)}")
+        return False
 
 
 class CategoryCreateApiView(generics.CreateAPIView):
@@ -42,13 +188,12 @@ class CategoryCreateApiView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, CanCreate]
 
     def perform_create(self, serializer):
-        # 将当前登录用户设置为创建者
         serializer.save(user=self.request.user)
 
 
 class CategoryUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]  # 确保只有创建者可以修改
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
     def get_object(self):
         category_id = self.kwargs['category_id']
@@ -56,7 +201,6 @@ class CategoryUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        # 执行自定义逻辑，例如检查是否有关联的文章
         posts_count = Post.objects.filter(category=instance).count()
         if posts_count > 0:
             return Response(
@@ -64,7 +208,6 @@ class CategoryUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 执行删除操作
         self.perform_destroy(instance)
         return Response({"message": "分类已成功删除"}, status=status.HTTP_204_NO_CONTENT)
 
@@ -85,8 +228,7 @@ class PostCategoryListApiView(generics.ListAPIView):
     def get_queryset(self):
         category_slug = self.kwargs['category_slug']
         category = Category.objects.get(slug=category_slug)
-        posts = Post.objects.filter(
-            category=category, status='Active')
+        posts = Post.objects.filter(category=category, status='Active')
         return posts
 
 
@@ -133,7 +275,6 @@ class LikePostAPIView(APIView):
 
 
 class PostCommentAPIView(APIView):
-
     def post(self, request):
         post_id = request.data["post_id"]
         name = request.data["name"]
@@ -163,18 +304,13 @@ class BookmarkPostAPIView(APIView):
         user = User.objects.get(id=user_id)
         post = Post.objects.get(id=post_id)
 
-        bookmark = Bookmark.objects.filter(
-            user=user, post=post).first()
+        bookmark = Bookmark.objects.filter(user=user, post=post).first()
 
         if bookmark:
             bookmark.delete()
             return Response({"message": "Post unbookmarked"}, status=status.HTTP_200_OK)
         else:
-            Bookmark.objects.create(
-                user=user,
-                post=post
-            )
-
+            Bookmark.objects.create(user=user, post=post)
             return Response({"message": "Post bookmarked"}, status=status.HTTP_201_CREATED)
 
 
@@ -182,13 +318,11 @@ class DashboradAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get_monthly_post_counts(self, user):
-        # 生成近12个月月份
         end_date = timezone.now().replace(day=1)
         months = [end_date - relativedelta(months=i)
                   for i in range(11, -1, -1)]
         month_labels = [m.strftime('%Y-%m') for m in months]
 
-        # 实际数据
         raw_data = (
             Post.objects
             .filter(user=user, date__gte=months[0])
@@ -208,8 +342,8 @@ class DashboradAPIView(APIView):
     def get(self, request, user_id):
         user = User.objects.get(id=user_id)
 
-        views = Post.objects.filter(
-            user=user).aggregate(view=Sum('views'))["view"] or 0
+        views = Post.objects.filter(user=user).aggregate(
+            view=Sum('views'))["view"] or 0
         posts = Post.objects.filter(user=user).count()
         likes = Post.objects.filter(user=user).aggregate(
             total_likes=Count('likes'))["total_likes"] or 0
@@ -232,6 +366,7 @@ class DashboradAPIView(APIView):
                               .filter(posts__user=user)
                               .annotate(like_count=Count('posts__likes'))
                               .values('title', 'like_count'))
+
         one_year_ago = timezone.now() - timedelta(days=365)
         daily_posts = list(
             Post.objects
@@ -246,7 +381,7 @@ class DashboradAPIView(APIView):
             "views": views,
             "posts": posts,
             "likes": likes,
-            "comments": 0,  # 如果之后加上评论模型可以再统计
+            "comments": 0,
             "bookmarks": bookmarks,
             "categories": category_counts,
             "monthly_posts": monthly_posts,
@@ -287,11 +422,10 @@ class DashboardNotificationsList(generics.ListAPIView):
     def get_queryset(self):
         user_id = self.kwargs['user_id']
         user = User.objects.get(id=user_id)
-        return Notification.objects.all(seen=False, user=user)
+        return Notification.objects.filter(seen=False, user=user)
 
 
 class DashboardMarkNotificationAsSeen(APIView):
-
     def post(self, request):
         noti_id = request.data["noti_id"]
         noti = Notification.objects.get(id=noti_id)
@@ -301,7 +435,6 @@ class DashboardMarkNotificationAsSeen(APIView):
 
 
 class DashboardReplyCommentAPIView(APIView):
-
     def post(self, request):
         comment_id = request.data["comment_id"]
         reply = request.data["reply"]
@@ -310,36 +443,6 @@ class DashboardReplyCommentAPIView(APIView):
         comment.reply = reply
         comment.save()
         return Response({"message": "Reply added"}, status=status.HTTP_200_OK)
-
-
-def translate_rich_text(html, target_lang, source_lang="zh"):
-    """保留 HTML 结构，只翻译其中的文字内容"""
-    soup = BeautifulSoup(html, "html.parser")
-
-    for tag in soup.find_all(string=True):
-        if tag.strip():  # 只翻译非空字符串
-            try:
-                translated = call_openai_translate(
-                    tag, target_lang, source_lang)
-                tag.replace_with(translated)
-            except Exception as e:
-                print(f"段落翻译失败: {tag[:20]}... -> {e}")
-                continue
-
-    return str(soup)
-
-
-def call_openai_translate(text, target_lang, source_lang="zh"):
-    """使用 DeepSeek 接口翻译"""
-    prompt = f"请将以下文本从{source_lang}翻译为{target_lang}：\n{text}"
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[
-            {"role": "system", "content": "你是一个精准的翻译助手，只返回翻译后的纯文本，不要解释"},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return response.choices[0].message.content.strip()
 
 
 class DashboardPostCreateAPIView(generics.CreateAPIView):
@@ -372,7 +475,6 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
         }
         need_ai_generate = data.get("need_ai_generate", False)
 
-        # 有内容的语言作为翻译源
         available_langs = {
             k: v for k, v in translations_data.items() if v and v.get("title")}
 
@@ -380,7 +482,6 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
             translation = translations_data.get(lang_code)
 
             if translation and translation.get("title"):
-                # 用户直接提交了翻译，原样保存
                 PostTranslation.objects.create(
                     post=post,
                     language=lang_code,
@@ -390,11 +491,9 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
                     is_ai_generated=translation.get("is_ai_generated", False)
                 )
             else:
-                # AI 自动补全
                 if not available_langs or not need_ai_generate:
                     continue
 
-                # 用第一个有内容的语言作为源
                 source_lang, source_data = list(available_langs.items())[0]
 
                 try:
@@ -414,27 +513,31 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
                         is_ai_generated=True
                     )
                 except Exception as e:
-                    print(f"[翻译失败] {lang_code}: {str(e)}")
+                    logger.error(
+                        f"Translation failed for {lang_code}: {str(e)}")
                     return Response(
                         {"error": f"翻译失败: {lang_code} - {str(e)}"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
-        return Response({"message": "Post created with translations", "post": {
-            "id": post.id,
-            "user": post.user.id,
-            "image": post.image.url if post.image else None,
-            "category": post.category.id,
-            "status": post.status,
-            "translations": [
-                {
-                    "language": translation.language,
-                    "title": translation.title,
-                    "description": translation.description,
-                    "content": translation.content
-                } for translation in post.translations.all()
-            ]
-        }}, status=status.HTTP_201_CREATED)
+        return Response({
+            "message": "Post created with translations",
+            "post": {
+                "id": post.id,
+                "user": post.user.id,
+                "image": post.image.url if post.image else None,
+                "category": post.category.id,
+                "status": post.status,
+                "translations": [
+                    {
+                        "language": translation.language,
+                        "title": translation.title,
+                        "description": translation.description,
+                        "content": translation.content
+                    } for translation in post.translations.all()
+                ]
+            }
+        }, status=status.HTTP_201_CREATED)
 
 
 class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -455,6 +558,7 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         image = data.get("image")
         category_id = data.get("category")
+        status_value = data.get("status")
         need_ai_generate = data.get("need_ai_generate")
 
         if image and image != 'undefined' and image != post_instance.image:
@@ -466,6 +570,10 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
             if post_instance.category != category:
                 post_instance.category = category
                 updated = True
+
+        if status_value and status_value != post_instance.status:
+            post_instance.status = status_value
+            updated = True
 
         if need_ai_generate is not None and post_instance.need_ai_generate != need_ai_generate:
             post_instance.need_ai_generate = need_ai_generate
@@ -479,7 +587,10 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
             "en": data.get("en"),
             "ja": data.get("ja"),
         }
+
         translations_updated = False
+        background_tasks = []
+
         available_langs = {}
         for lang_code, translation in translations_data.items():
             if translation and translation.get("title"):
@@ -519,7 +630,8 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
                         translations_updated = True
 
                 except Exception as e:
-                    print(f"❌ 保存 {lang_code} 翻译失败: {str(e)}")
+                    logger.error(
+                        f"Failed to save {lang_code} translation: {str(e)}")
                     continue
 
             elif need_ai_generate and available_langs:
@@ -542,59 +654,34 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
                             break
 
                     if not source_data:
-                        # print(f"⚠️  没有可用的翻译源，跳过 {lang_code}")
                         continue
 
-                    translated_title = call_openai_translate(
-                        source_data.get("title", ""),
+                    # 使用后台线程执行翻译
+                    future = translator_executor.submit(
+                        translate_post_background,
+                        post_instance.id,
                         lang_code,
-                        source_lang
+                        source_lang,
+                        source_data
                     )
-
-                    translated_description = ""
-                    if source_data.get("description"):
-                        translated_description = call_openai_translate(
-                            source_data["description"],
-                            lang_code,
-                            source_lang
-                        )
-
-                    translated_content = ""
-                    if source_data.get("content"):
-                        translated_content = translate_rich_text(
-                            source_data["content"],
-                            lang_code,
-                            source_lang
-                        )
-
-                    if existing:
-                        existing.title = translated_title
-                        existing.description = translated_description
-                        existing.content = translated_content
-                        existing.is_ai_generated = True
-                        existing.save()
-                    else:
-                        PostTranslation.objects.create(
-                            post=post_instance,
-                            language=lang_code,
-                            title=translated_title,
-                            description=translated_description,
-                            content=translated_content,
-                            is_ai_generated=True
-                        )
-
+                    background_tasks.append(future)
                     translations_updated = True
 
-                except Exception as translate_error:
-                    import traceback
-                    traceback.print_exc()
+                except Exception as e:
+                    logger.error(
+                        f"Failed to submit translation task for {lang_code}: {str(e)}")
                     continue
+
+        message = "Post updated successfully"
+        if background_tasks:
+            message += f". AI translation in progress for {len(background_tasks)} language(s)."
 
         if updated or translations_updated:
             serializer = self.get_serializer(post_instance)
             return Response({
-                "message": "Post updated successfully",
-                "data": serializer.data
+                "message": message,
+                "data": serializer.data,
+                "translating": len(background_tasks) > 0
             }, status=status.HTTP_200_OK)
         else:
             return Response({
@@ -612,19 +699,14 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            # 列表和详情允许所有已认证用户访问
             permission_classes = [IsAuthenticated]
         elif self.action == 'create':
-            # 创建需要创建权限
             permission_classes = [IsAuthenticated, CanCreate]
         elif self.action in ['update', 'partial_update']:
-            # 更新需要编辑权限
             permission_classes = [IsAuthenticated, CanEdit]
         elif self.action == 'destroy':
-            # 删除需要删除权限
             permission_classes = [IsAuthenticated, CanDelete]
         else:
-            # 其他操作需要非访客权限
             permission_classes = [IsAuthenticated, IsNotGuest]
 
         return [permission() for permission in permission_classes]
