@@ -20,4 +20,4 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8000
 
 # 默认启动命令（一般由 docker-compose 覆盖）
-CMD ["gunicorn", "website.wsgi:application", "--bind", "0.0.0.0:8000", "--timeout", "120"]
+CMD ["gunicorn", "website.wsgi:application", "--bind", "0.0.0.0:8000", "--timeout", "300", "--graceful-timeout", "300"]

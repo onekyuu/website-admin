@@ -3,7 +3,7 @@ services:
     build: ./backend
     image: registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-base:latest
     container_name: admin-backend
-    command: gunicorn website.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn website.wsgi:application --bind 0.0.0.0:8000 --timeout 300 --graceful-timeout 300
     volumes:
       - ./backend:/app
     ports:
