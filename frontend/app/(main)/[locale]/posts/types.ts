@@ -4,6 +4,7 @@ export interface PostTranslationContent {
   title: string;
   description: string;
   content: string;
+  is_ai_generated?: boolean;
 }
 
 export type PostTranslation = {
@@ -24,7 +25,7 @@ export interface UpdatePostBaseData {
   category?: number;
   image?: string;
   status?: string;
-  is_ai_generated?: boolean;
+  need_ai_generate?: boolean;
 }
 
 export interface UpdateExtraInfo {
@@ -73,9 +74,10 @@ export interface GetPostBaseData {
   image?: string;
   slug: string;
   category: PostCategory;
+  need_ai_generate: boolean;
   status?: string;
   views: number;
-  likes: number[]; // 如果 likes 字段是用户ID数组
+  likes: number[];
   date: string;
   translations: GetPostTranslation;
 }
@@ -94,7 +96,7 @@ export interface PostFormInitialBaseData {
   image?: string;
   status?: string;
   need_ai_generate?: boolean;
-  is_ai_generated?: boolean;
+  // is_ai_generated?: boolean;
   language?: LanguageCode;
 }
 

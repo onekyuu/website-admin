@@ -36,7 +36,7 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = [
             'id', 'user', 'profile', 'image', 'slug', 'category',
-            'status', 'views', 'likes', 'date', 'translations'
+            'status', 'views', 'likes', 'date', 'translations', 'need_ai_generate'
         ]
 
     def get_user(self, obj):
