@@ -20,6 +20,8 @@ import time
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import logging
+import re
+import json
 
 # Custom Imports
 from api.blog.models import Bookmark, Category, Comment, Notification, Post, PostTranslation
@@ -41,6 +43,21 @@ client = OpenAI(
 )
 
 
+def clean_translated_content(text):
+    """清理翻译结果中的代码块标记"""
+    if not text:
+        return text
+
+    # 移除 Markdown 代码块标记
+    text = re.sub(r'^```(?:json|html|xml)?\s*\n', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\n```$', '', text, flags=re.MULTILINE)
+
+    # 移除首尾空白
+    text = text.strip()
+
+    return text
+
+
 def call_openai_translate(text, target_lang, source_lang="zh"):
     """使用 DeepSeek 接口翻译，带超时和重试"""
     if not text or not text.strip():
@@ -50,7 +67,8 @@ def call_openai_translate(text, target_lang, source_lang="zh"):
     if len(text) > max_length:
         text = text[:max_length]
 
-    prompt = f"请将以下文本从{source_lang}翻译为{target_lang}，只返回翻译结果：\n{text}"
+    # 优化 prompt，明确要求不要添加代码块
+    prompt = f"将以下{source_lang}文本翻译为{target_lang}。注意：\n1. 只返回翻译后的纯文本\n2. 不要添加任何代码块标记（如 ```json 或 ```）\n3. 不要添加任何解释说明\n4. 保持原文格式\n\n原文：\n{text}"
 
     max_retries = 3
     for attempt in range(max_retries):
@@ -58,12 +76,18 @@ def call_openai_translate(text, target_lang, source_lang="zh"):
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
-                    {"role": "system", "content": "你是一个专业的翻译助手，只返回翻译结果"},
+                    {"role": "system", "content": "你是一个专业翻译助手。只返回翻译结果，不要添加代码块标记或任何其他内容。"},
                     {"role": "user", "content": prompt}
                 ],
                 timeout=60.0
             )
-            return response.choices[0].message.content.strip()
+
+            result = response.choices[0].message.content.strip()
+
+            # 清理可能的代码块标记
+            result = clean_translated_content(result)
+
+            return result
 
         except Exception as e:
             if attempt < max_retries - 1:
@@ -81,6 +105,15 @@ def translate_rich_text(html, target_lang, source_lang="zh"):
     if not html or not html.strip():
         return ""
 
+    # 尝试解析 JSON 格式的富文本（如 TipTap）
+    try:
+        json_data = json.loads(html)
+        if isinstance(json_data, dict) and json_data.get("type") == "doc":
+            return translate_tiptap_json(json_data, target_lang, source_lang)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # 普通 HTML 翻译
     soup = BeautifulSoup(html, "html.parser")
 
     text_segments = []
@@ -101,19 +134,21 @@ def translate_rich_text(html, target_lang, source_lang="zh"):
         if total_length < 1500:
             # 批量翻译
             combined_text = "\n###SPLIT###\n".join(text_segments)
-            prompt = f"请将以下文本从{source_lang}翻译为{target_lang}，保持 ###SPLIT### 分隔符：\n{combined_text}"
+            prompt = f"将以下{source_lang}文本翻译为{target_lang}。保持 ###SPLIT### 分隔符不变。\n\n{combined_text}"
 
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=[
-                    {"role": "system", "content": "你是一个专业的翻译助手"},
+                    {"role": "system", "content": "你是一个专业翻译助手。只返回翻译结果，保持分隔符不变。"},
                     {"role": "user", "content": prompt}
                 ],
                 timeout=90.0
             )
 
-            translated_segments = response.choices[0].message.content.strip().split(
-                "\n###SPLIT###\n")
+            result = response.choices[0].message.content.strip()
+            result = clean_translated_content(result)
+
+            translated_segments = result.split("\n###SPLIT###\n")
 
             for i, tag in enumerate(text_nodes):
                 if i < len(translated_segments):
@@ -137,6 +172,75 @@ def translate_rich_text(html, target_lang, source_lang="zh"):
         return str(soup)
 
 
+def translate_tiptap_json(json_data, target_lang, source_lang="zh"):
+    """翻译 TipTap JSON 格式的内容"""
+    try:
+        # 提取所有纯文本内容
+        texts = []
+
+        def extract_texts(node):
+            if isinstance(node, dict):
+                if node.get("type") == "text":
+                    text = node.get("text", "").strip()
+                    if text:
+                        texts.append(text)
+
+                if "content" in node:
+                    for child in node["content"]:
+                        extract_texts(child)
+            elif isinstance(node, list):
+                for item in node:
+                    extract_texts(item)
+
+        extract_texts(json_data)
+
+        if not texts:
+            return json.dumps(json_data, ensure_ascii=False)
+
+        # 批量翻译
+        combined_text = "\n###SPLIT###\n".join(texts)
+        prompt = f"将以下{source_lang}文本翻译为{target_lang}。保持 ###SPLIT### 分隔符不变。\n\n{combined_text}"
+
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": "你是一个专业翻译助手。只返回翻译结果，保持分隔符不变。不要添加代码块标记。"},
+                {"role": "user", "content": prompt}
+            ],
+            timeout=90.0
+        )
+
+        result = response.choices[0].message.content.strip()
+        result = clean_translated_content(result)
+        translated_texts = result.split("\n###SPLIT###\n")
+
+        # 替换原文本
+        text_index = 0
+
+        def replace_texts(node):
+            nonlocal text_index
+            if isinstance(node, dict):
+                if node.get("type") == "text" and node.get("text", "").strip():
+                    if text_index < len(translated_texts):
+                        node["text"] = translated_texts[text_index]
+                        text_index += 1
+
+                if "content" in node:
+                    for child in node["content"]:
+                        replace_texts(child)
+            elif isinstance(node, list):
+                for item in node:
+                    replace_texts(item)
+
+        replace_texts(json_data)
+
+        return json.dumps(json_data, ensure_ascii=False)
+
+    except Exception as e:
+        logger.error(f"TipTap JSON translation failed: {str(e)}")
+        return json.dumps(json_data, ensure_ascii=False)
+
+
 def translate_post_background(post_id, lang_code, source_lang, source_data):
     """后台翻译任务"""
     try:
@@ -156,11 +260,17 @@ def translate_post_background(post_id, lang_code, source_lang, source_data):
 
         translated_content = ""
         if source_data.get("content"):
-            translated_content = translate_rich_text(
-                source_data["content"],
-                lang_code,
-                source_lang
-            )
+            # 检测内容格式
+            content = source_data["content"]
+            try:
+                # 尝试作为 JSON 解析
+                json.loads(content)
+                translated_content = translate_rich_text(
+                    content, lang_code, source_lang)
+            except (json.JSONDecodeError, TypeError):
+                # 普通 HTML
+                translated_content = translate_rich_text(
+                    content, lang_code, source_lang)
 
         post = Post.objects.get(id=post_id)
 
@@ -180,6 +290,8 @@ def translate_post_background(post_id, lang_code, source_lang, source_data):
     except Exception as e:
         logger.error(
             f"Background translation failed for {lang_code}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return False
 
 
