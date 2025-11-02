@@ -98,7 +98,7 @@ export const PostForm: React.FC<PostFormProps> = ({
       description: initialValues?.description || "",
       content: initialValues?.content || "",
       category: initialValues?.category || "",
-      need_ai_generate: false,
+      need_ai_generate: initialValues?.need_ai_generate || false,
       image: initialValues?.image || "",
     },
   });
@@ -239,22 +239,22 @@ export const PostForm: React.FC<PostFormProps> = ({
                   </FormItem>
                 )}
               />
-              {mode === "create" && (
-                <FormField
-                  control={form.control}
-                  name="need_ai_generate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("Post.needAITranslation")}</FormLabel>
-                      <Switch
-                        onCheckedChange={field.onChange}
-                        checked={field.value}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="need_ai_generate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("Post.needAITranslation")}</FormLabel>
+                    <Switch
+                      onCheckedChange={field.onChange}
+                      checked={field.value}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* {mode === "create" && (
+              )} */}
               {mode === "edit" && initialValues?.is_ai_generated && (
                 <div className="flex items-center gap-2 self-baseline-last">
                   <Image

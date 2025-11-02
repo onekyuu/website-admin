@@ -1,4 +1,3 @@
-# Create your views here.
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth, TruncDay
 from django.utils import timezone
@@ -175,11 +174,7 @@ class BookmarkPostAPIView(APIView):
                 user=user,
                 post=post
             )
-            # Notification.objects.create(
-            #     user=post.user,
-            #     post=post,
-            #     type='Bookmark',
-            # )
+
             return Response({"message": "Post bookmarked"}, status=status.HTTP_201_CREATED)
 
 
@@ -365,9 +360,9 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
         post = Post.objects.create(
             user=user,
             image=data.get("image"),
-            # tags=data.get("tags"),
             category=category,
             status=data.get("status", "Active"),
+            need_ai_generate=data.get("need_ai_generate", False)
         )
 
         translations_data = {
@@ -380,8 +375,6 @@ class DashboardPostCreateAPIView(generics.CreateAPIView):
         # 有内容的语言作为翻译源
         available_langs = {
             k: v for k, v in translations_data.items() if v and v.get("title")}
-        missing_langs = [
-            k for k, v in translations_data.items() if not v or not v.get("title")]
 
         for lang_code in ["zh", "en", "ja"]:
             translation = translations_data.get(lang_code)
@@ -462,35 +455,38 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
         updated = False  # 标记是否有修改
 
         image = data.get("image")
-        # tags = data.get("tags")
         category_id = data.get("category")
-        # post_status = data.get("status")
+        need_ai_generate = data.get("need_ai_generate")
 
         if image != 'undefined' and image != post_instance.image:
             post_instance.image = image
             updated = True
-        # if tags != post_instance.tags:
-        #     post_instance.tags = tags
-        #     updated = True
         if category_id:
             category = Category.objects.get(id=category_id)
             if post_instance.category != category:
                 post_instance.category = category
                 updated = True
-        # if post_status and post_instance.status != post_status:
-        #     post_instance.status = post_status
-        #     updated = True
+
+        need_ai_generate_changed = False
+        if need_ai_generate is not None and post_instance.need_ai_generate != need_ai_generate:
+            post_instance.need_ai_generate = need_ai_generate
+            need_ai_generate_changed = True
+            updated = True
 
         if updated:
             post_instance.save()
 
-        # 翻译内容的判断
         translations_data = {
             "zh": data.get("zh"),
             "en": data.get("en"),
             "ja": data.get("ja"),
         }
         translations_updated = False
+        available_langs = {}
+        for lang_code, translation in translations_data.items():
+            if translation and translation.get("title"):
+                available_langs[lang_code] = translation
+
         for lang_code, translation in translations_data.items():
             if translation:
                 try:
@@ -521,6 +517,69 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
                     )
                     translations_updated = True
 
+            elif need_ai_generate and available_langs:
+                try:
+                    existing = PostTranslation.objects.filter(
+                        post=post_instance,
+                        language=lang_code
+                    ).first()
+
+                    should_translate = (
+                        need_ai_generate_changed and need_ai_generate
+                    ) or (
+                        not existing or not existing.title
+                    )
+
+                    if should_translate:
+                        source_lang, source_data = list(
+                            available_langs.items())[0]
+
+                        try:
+                            translated_title = call_openai_translate(
+                                source_data["title"], lang_code, source_lang)
+
+                            translated_description = ""
+                            if source_data.get("description"):
+                                translated_description = call_openai_translate(
+                                    source_data["description"], lang_code, source_lang)
+
+                            translated_content = ""
+                            if source_data.get("content"):
+                                translated_content = translate_rich_text(
+                                    source_data["content"], lang_code, source_lang)
+
+                            if existing:
+                                existing.title = translated_title
+                                existing.description = translated_description
+                                existing.content = translated_content
+                                existing.is_ai_generated = True
+                                existing.save()
+                            else:
+                                PostTranslation.objects.create(
+                                    post=post_instance,
+                                    language=lang_code,
+                                    title=translated_title,
+                                    description=translated_description,
+                                    content=translated_content,
+                                    is_ai_generated=True
+                                )
+
+                            translations_updated = True
+
+                        except Exception as translate_error:
+                            print(
+                                f"[ERROR] Translation failed for {lang_code}: {str(translate_error)}")
+                            import traceback
+                            traceback.print_exc()
+                            # 继续处理其他语言，不中断整个流程
+                            continue
+
+                except Exception as e:
+                    print(f"[ERROR] Failed to process {lang_code}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    continue
+
         if updated or translations_updated:
             return Response({"message": "Post updated"}, status=status.HTTP_200_OK)
         else:
@@ -536,9 +595,6 @@ class PostViewSet(viewsets.ModelViewSet):
         return Post.objects.filter(status='Active')
 
     def get_permissions(self):
-        """
-        根据不同的操作设置不同的权限
-        """
         if self.action in ['list', 'retrieve']:
             # 列表和详情允许所有已认证用户访问
             permission_classes = [IsAuthenticated]

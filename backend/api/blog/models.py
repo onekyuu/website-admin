@@ -42,6 +42,7 @@ class Post(models.Model):
     views = models.IntegerField(default=0)
     likes = models.ManyToManyField(User, related_name='likes_user', blank=True)
     date = models.DateTimeField(auto_now_add=True)
+    need_ai_generate = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'api_post'

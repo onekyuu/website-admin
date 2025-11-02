@@ -84,6 +84,7 @@ const PostEditPage = () => {
       };
       draft.category = data.category ? parseInt(data.category) : undefined;
       draft.image = data.image || "";
+      draft.need_ai_generate = data.need_ai_generate;
     });
   };
 
@@ -95,6 +96,7 @@ const PostEditPage = () => {
         description: postData?.translations?.[lang]?.description || "",
         content: postData?.translations?.[lang]?.content || "",
         category: postData.category.id.toString(),
+        need_ai_generate: postData?.need_ai_generate || false,
         is_ai_generated:
           postData?.translations?.[lang]?.is_ai_generated || false,
         image: postData?.image || "",
