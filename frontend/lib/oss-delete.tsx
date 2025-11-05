@@ -26,7 +26,6 @@ export async function deleteFromOSS(fileUrl: string): Promise<{
       { object_key: objectKey },
     );
 
-    console.log(`Successfully deleted: ${objectKey}`);
     return {
       success: true,
       message: data.message,
@@ -62,8 +61,6 @@ export async function deleteMultipleFromOSS(fileUrls: string[]): Promise<{
       total_deleted: number;
       total_failed: number;
     }>(`/oss/images/delete/batch/`, { object_keys: objectKeys });
-
-    console.log(`Successfully deleted ${data.total_deleted} files`);
 
     return {
       success: true,

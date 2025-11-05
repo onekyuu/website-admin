@@ -249,7 +249,6 @@ export function SimpleEditor({
     content: content,
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
-      console.log("Editor content:", json);
       onChange?.(JSON.stringify(json));
     },
     editable,

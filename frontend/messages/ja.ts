@@ -7,6 +7,7 @@ import Login from "./locales/ja/login";
 import Menu from "./locales/ja/menu";
 import Post from "./locales/ja/post";
 import Images from "./locales/ja/images";
+import Project from "./locales/ja/project";
 
 export default {
   Common,
@@ -18,4 +19,5 @@ export default {
   Account,
   Dashboard,
   Images,
+  Project,
 };

@@ -68,7 +68,6 @@ const RegisterPage: FC = () => {
     onSuccess: (data) => {
       form.reset();
       toast.success(t("signUpSuccess"));
-      console.log("User created:", data);
     },
     onError: (error) => {
       toast.error(t("signUpError"));

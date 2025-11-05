@@ -17,7 +17,6 @@ const LoginPage: FC = () => {
   const handleSubmit = async (data: { email: string; password: string }) => {
     try {
       const signInResult = await login(data);
-      console.log("signInResult", signInResult);
       if (signInResult) {
         toast.success(t("signInSuccess"));
       }
@@ -30,7 +29,6 @@ const LoginPage: FC = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      // 已经登录，跳转回首页/dashboard
       router.replace("/dashboard");
     }
   }, [isLoggedIn, router]);
@@ -40,15 +38,15 @@ const LoginPage: FC = () => {
         <div className="col-span-4 space-y-4 text-left absolute top-8 left-8 ">
           <div className="text-xl flex items-center gap-2">
             <Boxes size={"30px"} />
-            SEELE-ADMIN
+            OneKyuu-Admin
           </div>
         </div>
         <div className="space-y-4">
           <div className="text-3xl">Admin</div>
-          <div className="text-xl">for Onekyuu&apos;s Website</div>
+          <div className="text-xl">for OneKyuu&apos;s Website</div>
         </div>
         <footer className="absolute bottom-4 text-sm text-[var(--color-gray-500)]">
-          &copy; {dayjs().year()} Onekyuu. All rights reserved.
+          &copy; {dayjs().year()} OneKyuu. All rights reserved.
         </footer>
       </div>
       <div className="flex flex-1 items-center justify-center h-full">

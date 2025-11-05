@@ -1,43 +1,39 @@
 "use client";
+
+import { DataTable } from "@/components/DataTable";
+import Image from "next/image";
 import { ColumnDef } from "@tanstack/react-table";
-import React, { FC } from "react";
+import React from "react";
+import { Skill } from "./types";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
+import { useAuthStore } from "@/lib/stores/auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { del, get, patch, post } from "@/lib/fetcher";
-import { useTranslations } from "next-intl";
-import { DataTable } from "@/components/DataTable";
 import { toast } from "sonner";
-import Image from "next/image";
-import CategoryDialog, { Category } from "@/components/CategoryDialog";
-import { useAuthStore } from "@/lib/stores/auth";
+import SkillDialog from "@/components/SkillDialog";
 
-const CategoryPage: FC = () => {
-  const t = useTranslations();
+const SkillsPage = () => {
+  const t = useTranslations("Project");
   const userPermissions = useAuthStore(
     (state) => state.allUserData,
   )?.permissions;
 
-  const { data: categories, refetch } = useQuery({
-    queryKey: ["categories"],
-    queryFn: () =>
-      get<{ id: number; title: string; slug: string; image: string }[]>(
-        `/post/category/list/`,
-      ),
+  const { data: skills, refetch } = useQuery({
+    queryKey: ["skills"],
+    queryFn: () => get<Skill[]>(`/projects/skill/list/`),
   });
 
-  const handleCreateCategory = async (data: {
-    title: string;
-    image?: string;
-  }) => {
+  const handleCreateSkill = async (data: { name: string; image?: string }) => {
     const response = await post<
-      { data: Category },
-      { title: string; image?: string }
-    >("/post/category/create/", data);
+      { data: Skill },
+      { name: string; image?: string }
+    >("/projects/skill/create/", data);
     return response.data;
   };
 
   const mutation = useMutation({
-    mutationFn: handleCreateCategory,
+    mutationFn: handleCreateSkill,
     onSuccess: (data) => {
       toast.success("创建成功");
       refetch();
@@ -48,97 +44,93 @@ const CategoryPage: FC = () => {
     },
   });
 
-  const handleEditCategory = async (data: {
+  const handleEditSkill = async (data: {
     id: number;
-    title: string;
+    name: string;
     image?: string;
   }) => {
     const { id, ...updateData } = data;
     const response = await patch<
-      { data: Category },
-      { title: string; image?: string }
-    >(`/post/category/update/${id}/`, updateData);
+      { data: Skill },
+      { name: string; image?: string }
+    >(`/projects/skill/${id}/`, updateData);
     return response.data;
   };
 
   const editMutation = useMutation({
-    mutationFn: handleEditCategory,
+    mutationFn: handleEditSkill,
     onSuccess: (data) => {
-      toast.success(t("Category.editSuccess"));
+      toast.success(t("Skill.editSuccess"));
       refetch();
     },
     onError: (error) => {
-      toast.error(t("Category.editError"));
-      console.error("Error updating category:", error);
+      toast.error(t("Skill.editError"));
+      console.error("Error updating skill:", error);
     },
   });
 
   const handleCreateSubmit = async (
-    data: Category | { title: string; image?: string },
+    data: Skill | { name: string; image?: string },
   ) => {
     mutation.mutate(data);
   };
 
   const handleEditSubmit = async (
-    data: Category | { title: string; image?: string },
+    data: Skill | { name: string; image?: string },
   ) => {
-    editMutation.mutate(data as Category);
+    editMutation.mutate(data as Skill);
   };
 
   const createDialog = () => (
-    <CategoryDialog mode="create" handleSubmit={handleCreateSubmit} />
+    <SkillDialog mode="create" handleSubmit={handleCreateSubmit} />
   );
 
-  const editDialog = (data: Category) => {
+  const editDialog = (data: Skill) => {
     return (
-      <CategoryDialog
+      <SkillDialog
         mode="edit"
-        categoryToEdit={data}
+        skillToEdit={data}
         handleSubmit={handleEditSubmit}
       />
     );
   };
 
-  const handleDeleteCategory = async (id: number) => {
-    const response = await del(`/post/category/update/${id}/`);
+  const handleDeleteSkill = async (id: number) => {
+    const response = await del(`/projects/skill/${id}/`);
     return response;
   };
 
   const deleteMutation = useMutation({
-    mutationFn: handleDeleteCategory,
+    mutationFn: handleDeleteSkill,
     onSuccess: (data) => {
-      toast.success(t("Category.deleteSuccess"));
+      toast.success(t("Skill.deleteSuccess"));
       refetch();
     },
     onError: (error) => {
-      toast.error(t("Category.deleteError"));
+      toast.error(t("Skill.deleteError"));
       console.error("Error deleting user:", error);
     },
   });
 
-  const columns: ColumnDef<Category>[] = [
+  const columns: ColumnDef<Skill>[] = [
     {
       accessorKey: "id",
       header: "id",
     },
     {
-      accessorKey: "title",
-      header: "Title",
+      accessorKey: "name",
+      header: "Name",
     },
     {
-      accessorKey: "slug",
-      header: "Slug",
-    },
-    {
-      accessorKey: "image",
+      accessorKey: "image_url",
       header: "Image",
       cell: ({ row }) =>
-        row.original.image && (
+        row.original.image_url && (
           <div className="w-20">
             <Image
               width={40}
               height={40}
-              src={row.original.image}
+              src={row.original.image_url}
               alt="Image"
               className="rounded-md object-cover h-full"
             />
@@ -158,7 +150,7 @@ const CategoryPage: FC = () => {
             }}
             disabled={userPermissions?.is_guest}
           >
-            {t("Category.delete")}
+            {t("Skill.delete")}
           </Button>
         </div>
       ),
@@ -168,9 +160,9 @@ const CategoryPage: FC = () => {
   return (
     <div>
       <div className="mb-8">{createDialog()}</div>
-      <DataTable columns={columns} data={categories || []} />
+      <DataTable columns={columns} data={skills || []} />
     </div>
   );
 };
 
-export default CategoryPage;
+export default SkillsPage;

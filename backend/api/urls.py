@@ -11,8 +11,8 @@ urlpatterns = [
     path('', include('api.oss.urls')),
 
     # 项目管理
-    # path('projects/', include('api.projects.urls')),
+    path('', include('api.projects.urls')),
 
     # 图库管理
-    # path('gallery/', include('api.gallery.urls')),
+    # path('', include('api.gallery.urls')),
 ]
