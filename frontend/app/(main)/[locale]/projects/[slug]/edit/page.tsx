@@ -15,37 +15,43 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigations";
 import { languageOptions } from "@/lib/constants";
 import {
-  GetPostData,
-  LanguageCode,
-  PostFormInitialData,
-  UpdatePostData,
+  Project,
+  ProjectFormInitialData,
+  UpdateProjectData,
 } from "../../types";
+import ProjectForm from "@/components/ProjectForm";
+import { LanguageCode } from "../../../posts/types";
+import { Skill } from "../../skills/types";
 
-const PostEditPage = () => {
+const ProjectEditPage = () => {
   const params = useParams();
   const slug = params?.slug;
   const locale = params?.locale as LanguageCode;
-  const userId = useUserData()?.user_id;
   const t = useTranslations();
   const router = useRouter();
 
-  const [newPost, setNewPost] = useImmer<UpdatePostData | null>(null);
+  const [newProject, setNewProject] = useImmer<UpdateProjectData | null>(null);
 
-  const { data: postData } = useQuery({
-    queryKey: ["post-detail", slug],
-    queryFn: () => get<GetPostData>(`/post/detail/${slug}/`),
+  const { data: projectData } = useQuery({
+    queryKey: ["project-detail", slug],
+    queryFn: () => get<Project>(`/projects/detail/${slug}/`),
   });
 
-  const handleSavePost = async (data: UpdatePostData) => {
-    const response = await patch<{ data: GetPostData }, UpdatePostData>(
-      `/author/dashboard/post-detail/${userId}/${data.id}/`,
+  const { data: skills, refetch } = useQuery({
+    queryKey: ["skills"],
+    queryFn: () => get<Skill[]>(`/projects/skill/list/`),
+  });
+
+  const handleSaveProject = async (data: UpdateProjectData) => {
+    const response = await patch<{ data: Project }, UpdateProjectData>(
+      `/project/detail/${data.id}/`,
       data,
     );
     return response.data;
   };
 
   const mutation = useMutation({
-    mutationFn: handleSavePost,
+    mutationFn: handleSaveProject,
     onSuccess: (data) => {
       toast.success("更新成功");
       router.push("/posts");
@@ -57,66 +63,61 @@ const PostEditPage = () => {
   });
 
   const handleSave = () => {
-    if (!userId) {
-      toast.error(t("Post.userIdErrorMessage"));
+    if (!projectData?.id) {
+      toast.error(t("Project.projectIdErrorMessage"));
       return;
     }
-    if (!postData?.id) {
-      toast.error(t("Post.postIdErrorMessage"));
-      return;
-    }
-    if (!newPost) {
-      toast.error("Post not found");
+    if (!newProject) {
+      toast.error("Project not found");
       return;
     }
 
-    mutation.mutate(newPost);
+    mutation.mutate(newProject);
   };
 
-  const handleChange = (data: PostFormInitialData, language: LanguageCode) => {
-    setNewPost((draft) => {
-      if (!draft) return;
-      draft[language] = {
-        title: data.title || "",
-        description: data.description || "",
-        content: data.content || "",
-      };
-      draft.category = data.category ? parseInt(data.category) : undefined;
-      draft.image = data.image || "";
-      draft.need_ai_generate = data.need_ai_generate;
-    });
+  const handleChange = (
+    data: ProjectFormInitialData,
+    language: LanguageCode,
+  ) => {
+    setNewProject((prev) => ({
+      ...prev,
+      translations: {
+        ...prev?.translations,
+        [language]: {
+          title: data.title || "",
+          description: data.description || "",
+        },
+      },
+      images: data.images,
+      skill_ids: data.skill_ids || [],
+    }));
   };
 
   const initialValues = useCallback(
     (lang: LanguageCode) => {
-      if (!postData) return undefined;
+      if (!projectData) return undefined;
       return {
-        title: postData?.translations?.[lang]?.title || "",
-        description: postData?.translations?.[lang]?.description || "",
-        content: postData?.translations?.[lang]?.content || "",
-        category: postData.category.id.toString(),
-        need_ai_generate: postData?.need_ai_generate || false,
-        is_ai_generated:
-          postData?.translations?.[lang]?.is_ai_generated || false,
-        image: postData?.image || "",
+        images: projectData?.images || [],
+        skills: projectData?.skills || [],
+        title: projectData.translations[lang]?.title || "",
+        description: projectData.translations[lang]?.description || "",
+        skill_ids: projectData.skills.map((skill) => skill.id) || [],
       };
     },
-    [postData],
+    [projectData],
   );
 
   useEffect(() => {
-    if (postData) {
-      setNewPost({
-        ...postData,
-        category: postData.category.id,
-        user_id: postData.user.id,
+    if (projectData) {
+      setNewProject({
+        ...projectData,
       });
     }
-  }, [postData, setNewPost]);
+  }, [projectData, setNewProject]);
 
   return (
     <div>
-      {newPost && (
+      {newProject && (
         <Tabs defaultValue={locale} className="w-full">
           <div className="w-full flex items-center justify-between">
             <TabsList>
@@ -128,7 +129,7 @@ const PostEditPage = () => {
             </TabsList>
             <div>
               <Button
-                key={"save-post"}
+                key={"save-project"}
                 onClick={handleSave}
                 disabled={mutation.isPending}
               >
@@ -140,10 +141,11 @@ const PostEditPage = () => {
 
           {languageOptions.map((option) => (
             <TabsContent key={option.value} value={option.value}>
-              <PostForm
+              <ProjectForm
                 mode="edit"
-                initialValues={initialValues(option.value)}
+                initialData={initialValues(option.value)}
                 onChange={(data) => handleChange(data, option.value)}
+                skills={skills || []}
               />
             </TabsContent>
           ))}
@@ -153,4 +155,4 @@ const PostEditPage = () => {
   );
 };
 
-export default PostEditPage;
+export default ProjectEditPage;

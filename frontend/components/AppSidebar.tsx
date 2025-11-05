@@ -53,7 +53,6 @@ export function AppSidebar() {
   });
 
   useEffect(() => {
-    console.log("Fetched User Profile:", userProfile);
     if (userProfile) {
       useAuthStore.getState().setUser({
         user_id: userProfile.id.toString(),
@@ -110,8 +109,24 @@ export function AppSidebar() {
     },
     {
       title: "Projects",
-      url: "/projects",
       icon: <Boxes className="size-4" />,
+      items: [
+        {
+          title: "All Projects",
+          url: "/projects",
+          icon: <Boxes className="size-4" />,
+        },
+        {
+          title: "Skills",
+          url: "/projects/skills",
+          icon: <Boxes className="size-4" />,
+        },
+        {
+          title: "Project Images",
+          url: "/projects/images",
+          icon: <Boxes className="size-4" />,
+        },
+      ],
     },
     {
       title: "Gallery",
@@ -138,7 +153,7 @@ export function AppSidebar() {
                   <Boxes className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">SEELE</span>
+                  <span className="truncate font-semibold">OneKyuu</span>
                   <span className="truncate text-xs">Admin</span>
                 </div>
               </Link>

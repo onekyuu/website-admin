@@ -7,6 +7,7 @@ import Login from "./locales/zh/login";
 import Menu from "./locales/zh/menu";
 import Post from "./locales/zh/post";
 import Images from "./locales/zh/images";
+import Project from "./locales/zh/project";
 
 export default {
   Common,
@@ -18,4 +19,5 @@ export default {
   Account,
   Dashboard,
   Images,
+  Project,
 };

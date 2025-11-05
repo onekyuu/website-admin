@@ -48,7 +48,6 @@ const uploadImageToOSS = async (file: File): Promise<string> => {
     "/oss/images/upload/",
     formData,
   );
-  console.log("Upload response:", response);
   return response.data.url;
 };
 
@@ -140,7 +139,6 @@ export const PostForm: React.FC<PostFormProps> = ({
       }
 
       const imageURL = await uploadImageToOSS(file);
-      console.log("Uploaded image URL:", imageURL);
 
       onChange(imageURL);
       setImagePreview(imageURL);
@@ -161,14 +159,13 @@ export const PostForm: React.FC<PostFormProps> = ({
   }, [form, onChange]);
 
   useEffect(() => {
-    console.log("initialValues", initialValues);
     if (initialValues && !didInit.current) {
       form.reset({
         title: initialValues?.title || "",
         description: initialValues?.description || "",
         content: initialValues?.content || "",
         category: initialValues?.category || "",
-        need_ai_generate: false,
+        need_ai_generate: initialValues?.need_ai_generate || false,
       });
       setImagePreview(initialValues?.image);
       didInit.current = true;
@@ -253,8 +250,6 @@ export const PostForm: React.FC<PostFormProps> = ({
                   </FormItem>
                 )}
               />
-              {/* {mode === "create" && (
-              )} */}
               {mode === "edit" && initialValues?.is_ai_generated && (
                 <div className="flex items-center gap-2 self-baseline-last">
                   <Image

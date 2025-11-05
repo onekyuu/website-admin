@@ -7,6 +7,11 @@ from api.blog.models import (
     Bookmark,
     Notification
 )
+from api.projects.models import (
+    Project,
+    ProjectTranslation,
+    ProjectSkill
+)
 
 # 导出所有模型
 __all__ = [
@@ -19,4 +24,7 @@ __all__ = [
     'Comment',
     'Bookmark',
     'Notification',
+    'Project',
+    'ProjectTranslation',
+    'ProjectSkill'
 ]

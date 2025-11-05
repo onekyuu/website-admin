@@ -55,7 +55,6 @@ const PostCreatePage = () => {
     mutationFn: handleSavePost,
     onSuccess: (data) => {
       toast.success("创建成功");
-      console.log("User created:", data);
       router.push("/posts");
     },
     onError: (error) => {
