@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import React from "react";
 import { LanguageCode } from "../../posts/types";
 import { useRouter } from "@/i18n/navigations";
-import useUserData from "@/hooks/useUserData";
 import { useAuthStore } from "@/lib/stores/auth";
 import { languageOptions } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,7 @@ const ProjectCreatePage = () => {
   const [project, setProject] = React.useState<CreateProjectData>({
     images: [],
     skill_ids: [],
+    is_featured: false,
     translations: {
       [locale]: {
         title: "",
@@ -49,6 +49,7 @@ const ProjectCreatePage = () => {
       },
       images: data.images,
       skill_ids: data.skill_ids || [],
+      is_featured: data.is_featured || false,
     }));
   };
 
@@ -119,6 +120,7 @@ const ProjectCreatePage = () => {
                 title: project.translations[option.value]?.title || "",
                 description:
                   project.translations[option.value]?.description || "",
+                is_featured: project.is_featured || false,
               }}
               onChange={(data) => handleChange(data, option.value)}
             />

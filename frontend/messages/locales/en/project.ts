@@ -10,6 +10,7 @@ const Project = {
   create: "Create Project",
   edit: "Edit Project",
   delete: "Delete Project",
+  isFeatured: "Is Featured",
   skills: "Skills",
   selectSkill: "Select Skills",
   Skill: {

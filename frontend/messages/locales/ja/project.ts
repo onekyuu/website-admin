@@ -9,6 +9,7 @@ const Project = {
   create: "プロジェクトを作成",
   edit: "プロジェクトを編集",
   delete: "プロジェクトを削除",
+  isFeatured: "注目プロジェクト",
   skills: "スキル",
   selectSkill: "スキルを選択",
   Skill: {

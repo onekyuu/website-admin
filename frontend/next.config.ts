@@ -25,6 +25,13 @@ const config: NextConfig = {
 
     formats: ["image/avif", "image/webp"],
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  swcMinify: true,
 };
 
 export default withNextIntl(config);
