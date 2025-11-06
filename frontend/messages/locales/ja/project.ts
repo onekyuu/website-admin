@@ -1,3 +1,5 @@
+import { info } from "console";
+
 const Project = {
   title: "プロジェクトタイトル",
   images: "画像",
@@ -10,6 +12,11 @@ const Project = {
   edit: "プロジェクトを編集",
   delete: "プロジェクトを削除",
   isFeatured: "注目プロジェクト",
+  infoMaxLength: "最大4つの情報項目が許可されています",
+  infoPlaceholder: "プロジェクト情報を入力してください",
+  info: "情報",
+  addInfo: "情報を追加",
+  removeInfo: "情報を削除",
   skills: "スキル",
   selectSkill: "スキルを選択",
   Skill: {

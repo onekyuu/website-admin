@@ -121,6 +121,7 @@ const ProjectCreatePage = () => {
                 description:
                   project.translations[option.value]?.description || "",
                 is_featured: project.is_featured || false,
+                info: project.translations[option.value]?.info || [],
               }}
               onChange={(data) => handleChange(data, option.value)}
             />

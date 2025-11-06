@@ -14,13 +14,14 @@ import {
 import { Input } from "./ui/input";
 import { del, post } from "@/lib/fetcher";
 import { Button } from "./ui/button";
-import { ImageIcon, Upload, X } from "lucide-react";
+import { ImageIcon, Plus, Trash2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { Skill } from "@/app/(main)/[locale]/projects/skills/types";
 import { MultiSelectCheckbox, Option } from "./ui/multi-select-checkbox";
 import MarkdownEditor from "./MarkdownEditor";
 import { NewProjectData } from "@/app/(main)/[locale]/projects/types";
 import { Switch } from "./ui/switch";
+import { info } from "console";
 
 interface ProjectFormProps {
   skills: Skill[];
@@ -50,6 +51,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
     images: z.array(z.string()),
     skill_ids: z.array(z.number()),
     is_featured: z.boolean(),
+    info: z.array(z.string()).max(4, t("infoMaxLength")),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,6 +62,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
       images: initialData?.images || [],
       skill_ids: initialData?.skill_ids || [],
       is_featured: initialData?.is_featured || false,
+      info: initialData?.info || [],
     },
   });
 
@@ -124,6 +127,32 @@ const ProjectForm: FC<ProjectFormProps> = ({
     }
   };
 
+  const handleAddInfo = (
+    field: ControllerRenderProps<z.infer<typeof formSchema>, "info">,
+  ) => {
+    if (field.value.length < 4) {
+      field.onChange([...field.value, ""]);
+    }
+  };
+
+  const handleRemoveInfo = (
+    field: ControllerRenderProps<z.infer<typeof formSchema>, "info">,
+    index: number,
+  ) => {
+    const updatedInfo = field.value.filter((_, i) => i !== index);
+    field.onChange(updatedInfo);
+  };
+
+  const handleInfoChange = (
+    field: ControllerRenderProps<z.infer<typeof formSchema>, "info">,
+    index: number,
+    value: string,
+  ) => {
+    const updatedInfo = [...field.value];
+    updatedInfo[index] = value;
+    field.onChange(updatedInfo);
+  };
+
   useEffect(() => {
     const subscription = form.watch((values) => {
       onChange?.(values as NewProjectData);
@@ -163,6 +192,54 @@ const ProjectForm: FC<ProjectFormProps> = ({
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="info"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("info")}</FormLabel>
+                <FormControl>
+                  <div className="space-y-2">
+                    {field.value.map((item, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          value={item}
+                          onChange={(e) =>
+                            handleInfoChange(field, index, e.target.value)
+                          }
+                          placeholder={t("infoPlaceholder", {
+                            index: index + 1,
+                          })}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleRemoveInfo(field, index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {field.value.length < 4 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleAddInfo(field)}
+                        className="w-full"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t("addInfo")}
+                      </Button>
+                    )}
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

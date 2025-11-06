@@ -23,13 +23,13 @@ class ProjectCreateApiView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         translations_data = request.data.pop('translations', {})
-        skill_ids = request.data.get('skill_ids', [])
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         project = serializer.save(created_by=request.user)
 
-        supported_languages = ['zh', 'en', 'ja']
+        # 按优先级查找源语言：中文 > 日语 > 英语
+        supported_languages = ['zh', 'ja', 'en']
 
         source_lang = None
         source_translation = None
@@ -45,16 +45,20 @@ class ProjectCreateApiView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        for target_lang in supported_languages:
-            if target_lang in translations_data and translations_data[target_lang].get('title'):
+        # 创建所有语言的翻译
+        all_languages = ['zh', 'en', 'ja']
+        for target_lang in all_languages:
+            if target_lang == source_lang:
+                # 源语言直接保存
                 ProjectTranslation.objects.create(
                     project=project,
                     language=target_lang,
-                    title=translations_data[target_lang].get('title', ''),
-                    description=translations_data[target_lang].get(
-                        'description', ''),
+                    title=source_translation.get('title', ''),
+                    description=source_translation.get('description', ''),
+                    info=source_translation.get('info', []),
                 )
             else:
+                # 其他语言自动翻译
                 translated_title = translate_text(
                     source_translation.get('title', ''),
                     source_lang,
@@ -69,11 +73,23 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         target_lang
                     )
 
+                translated_info = []
+                source_info = source_translation.get('info', [])
+                for info_item in source_info:
+                    if info_item:
+                        translated_item = translate_text(
+                            info_item,
+                            source_lang,
+                            target_lang
+                        )
+                        translated_info.append(translated_item)
+
                 ProjectTranslation.objects.create(
                     project=project,
                     language=target_lang,
                     title=translated_title,
                     description=translated_description,
+                    info=translated_info
                 )
 
         response_serializer = self.get_serializer(project)
@@ -84,8 +100,8 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProjectSerializer
     permission_classes = [AllowAny]
     queryset = Project.objects.prefetch_related('skills', 'translations')
-    lookup_field = 'slug'  # 改为 slug
-    lookup_url_kwarg = 'project_slug'  # 改为 project_slug
+    lookup_field = 'slug'
+    lookup_url_kwarg = 'project_slug'
 
     def get_permissions(self):
         """GET 请求允许所有人访问，其他操作需要认证"""
@@ -93,20 +109,54 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             return [AllowAny()]
         return [IsAuthenticated(), IsAdminOrReadOnly()]
 
+    def _has_translation_updates(self, translations_data, project):
+        """检查是否有翻译内容的更新（title、description、info）"""
+        if not translations_data:
+            return False
+
+        # 按优先级查找源语言：中文 > 日语 > 英语
+        supported_languages = ['zh', 'ja', 'en']
+
+        for lang in supported_languages:
+            if lang not in translations_data:
+                continue
+
+            translation_data = translations_data[lang]
+            if not translation_data.get('title'):
+                continue
+
+            # 获取现有翻译
+            existing = project.translations.filter(language=lang).first()
+            if not existing:
+                return True
+
+            # 检查是否有内容变化
+            if (translation_data.get('title', '') != existing.title or
+                translation_data.get('description', '') != existing.description or
+                    translation_data.get('info', []) != existing.info):
+                return True
+
+        return False
+
     def update(self, request, *args, **kwargs):
         translations_data = request.data.pop('translations', {})
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
 
+        # 更新项目基本信息（images, skill_ids, is_featured 等）
         serializer = self.get_serializer(
-            instance,
-            data=request.data,
-            partial=partial
-        )
+            instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         project = serializer.save()
 
-        supported_languages = ['zh', 'en', 'ja']
+        # 检查是否有翻译内容的更新
+        if not self._has_translation_updates(translations_data, project):
+            # 没有翻译更新，直接返回
+            response_serializer = self.get_serializer(project)
+            return Response(response_serializer.data)
+
+        # 按优先级查找源语言：中文 > 日语 > 英语
+        supported_languages = ['zh', 'ja', 'en']
 
         source_lang = None
         source_translation = None
@@ -116,55 +166,61 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                 source_translation = translations_data[lang]
                 break
 
+        # 如果没有提供任何翻译，不做任何更新
         if not source_lang:
-            existing_translation = project.translations.filter(
-                language='zh'
-            ).first() or project.translations.first()
+            response_serializer = self.get_serializer(project)
+            return Response(response_serializer.data)
 
-            if existing_translation:
-                source_lang = existing_translation.language
-                source_translation = {
-                    'title': existing_translation.title,
-                    'description': existing_translation.description,
-                }
+        # 更新所有语言的翻译
+        all_languages = ['zh', 'en', 'ja']
+        for target_lang in all_languages:
+            if target_lang == source_lang:
+                # 源语言直接保存
+                ProjectTranslation.objects.update_or_create(
+                    project=project,
+                    language=target_lang,
+                    defaults={
+                        'title': source_translation.get('title', ''),
+                        'description': source_translation.get('description', ''),
+                        'info': source_translation.get('info', []),
+                    }
+                )
+            else:
+                # 其他语言自动翻译
+                translated_title = translate_text(
+                    source_translation.get('title', ''),
+                    source_lang,
+                    target_lang
+                )
 
-        if source_lang and source_translation:
-            for target_lang in supported_languages:
-                if target_lang in translations_data and translations_data[target_lang].get('title'):
-                    ProjectTranslation.objects.update_or_create(
-                        project=project,
-                        language=target_lang,
-                        defaults={
-                            'title': translations_data[target_lang].get('title', ''),
-                            'description': translations_data[target_lang].get('description', ''),
-                        }
+                translated_description = ''
+                if source_translation.get('description'):
+                    translated_description = translate_text(
+                        source_translation['description'],
+                        source_lang,
+                        target_lang
                     )
-                else:
-                    existing = project.translations.filter(
-                        language=target_lang).first()
-                    if not existing:
-                        translated_title = translate_text(
-                            source_translation.get('title', ''),
+
+                translated_info = []
+                source_info = source_translation.get('info', [])
+                for info_item in source_info:
+                    if info_item:
+                        translated_item = translate_text(
+                            info_item,
                             source_lang,
                             target_lang
                         )
+                        translated_info.append(translated_item)
 
-                        translated_description = ''
-                        if source_translation.get('description'):
-                            translated_description = translate_text(
-                                source_translation['description'],
-                                source_lang,
-                                target_lang
-                            )
-
-                        ProjectTranslation.objects.update_or_create(
-                            project=project,
-                            language=target_lang,
-                            defaults={
-                                'title': translated_title,
-                                'description': translated_description,
-                            }
-                        )
+                ProjectTranslation.objects.update_or_create(
+                    project=project,
+                    language=target_lang,
+                    defaults={
+                        'title': translated_title,
+                        'description': translated_description,
+                        'info': translated_info,
+                    }
+                )
 
         response_serializer = self.get_serializer(project)
         return Response(response_serializer.data)
