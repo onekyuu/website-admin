@@ -27,7 +27,7 @@ import json
 from api.blog.models import Bookmark, Category, Comment, Notification, Post, PostTranslation
 from api.blog.serializers import CategorySerializer, CommentSerializer, DashboardSerializer, NotificationSerializer, PostSerializer
 from api.core.models import User
-from api.core.pagination import StandardResultsSetPagination
+from api.core.pagination import CustomPageNumberPagination
 from api.core.permissions import IsOwnerOrReadOnly, IsNotGuest, CanCreate, CanEdit, CanDelete, IsAdminOrReadOnly
 
 logger = logging.getLogger(__name__)
@@ -335,7 +335,7 @@ class CategoryListApiView(generics.ListAPIView):
 class PostCategoryListApiView(generics.ListAPIView):
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
-    pagination_class = StandardResultsSetPagination
+    pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
         category_slug = self.kwargs['category_slug']
@@ -347,7 +347,7 @@ class PostCategoryListApiView(generics.ListAPIView):
 class PostListAPIView(generics.ListAPIView):
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
-    pagination_class = StandardResultsSetPagination
+    pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
         return Post.objects.filter(status='Active')
@@ -509,7 +509,7 @@ class DashboradAPIView(APIView):
 class DashboardPostLists(generics.ListAPIView):
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
-    pagination_class = StandardResultsSetPagination
+    pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
         user_id = self.kwargs['user_id']
@@ -804,7 +804,7 @@ class DashboardPostUpdateAPIView(generics.RetrieveUpdateDestroyAPIView):
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
-    pagination_class = StandardResultsSetPagination
+    pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
         return Post.objects.filter(status='Active')
