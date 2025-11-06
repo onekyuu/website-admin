@@ -9,6 +9,7 @@ const Project = {
   create: "创建项目",
   edit: "编辑项目",
   delete: "删除项目",
+  isFeatured: "是否置顶",
   skills: "技术栈",
   selectSkill: "选择技术栈",
   Skill: {

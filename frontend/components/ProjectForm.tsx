@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useRef, useState } from "react";
 import { ControllerRenderProps, useForm } from "react-hook-form";
-import { number, z } from "zod";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import {
@@ -12,8 +12,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
-import { SkillType } from "@/lib/constants";
 import { del, post } from "@/lib/fetcher";
 import { Button } from "./ui/button";
 import { ImageIcon, Upload, X } from "lucide-react";
@@ -22,6 +20,7 @@ import { Skill } from "@/app/(main)/[locale]/projects/skills/types";
 import { MultiSelectCheckbox, Option } from "./ui/multi-select-checkbox";
 import MarkdownEditor from "./MarkdownEditor";
 import { NewProjectData } from "@/app/(main)/[locale]/projects/types";
+import { Switch } from "./ui/switch";
 
 interface ProjectFormProps {
   skills: Skill[];
@@ -50,6 +49,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
     description: z.string(),
     images: z.array(z.string()),
     skill_ids: z.array(z.number()),
+    is_featured: z.boolean(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -59,6 +59,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
       description: initialData?.description || "",
       images: initialData?.images || [],
       skill_ids: initialData?.skill_ids || [],
+      is_featured: initialData?.is_featured || false,
     },
   });
 
@@ -145,6 +146,22 @@ const ProjectForm: FC<ProjectFormProps> = ({
                     required
                     {...field}
                     placeholder={t("titlePlaceholder")}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="is_featured"
+            render={({ field }) => (
+              <FormItem className="flex items-center space-x-3 space-y-0">
+                <FormLabel className="mb-0">{t("isFeatured")}</FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
                   />
                 </FormControl>
                 <FormMessage />

@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
     "prepare": "husky"
   },
   "dependencies": {
@@ -90,6 +92,9 @@
     "typescript": "^5"
   },
   "lint-staged": {
+    "*.{ts,tsx}": [
+      "bash -c 'tsc --noEmit'"
+    ],
     "**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
       "prettier --write"

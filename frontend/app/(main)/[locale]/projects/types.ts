@@ -24,6 +24,7 @@ export type Project = ProjectBase & { translations: ProjectTranslation };
 export interface CreateProjectBaseData {
   images?: string[];
   skill_ids?: number[];
+  is_featured?: boolean;
 }
 
 export type CreateProjectData = CreateProjectBaseData & {
