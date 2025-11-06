@@ -6,42 +6,56 @@ on:
       - main
 
 jobs:
-  # 1. 严格的代码质量检查
   code-quality:
     runs-on: ubuntu-latest
     steps:
       - name: 🛎️ Checkout code
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js
+      - name: 🟢 Setup Node.js with pnpm
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: 📦 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 🗂️ Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: 📦 Install dependencies
-        run: cd frontend && npm ci
+        run: cd frontend && pnpm install --frozen-lockfile
 
       - name: 🔍 ESLint Check
         run: |
           cd frontend
           echo "Running ESLint..."
-          npm run lint
+          pnpm run lint
 
       - name: 🔎 TypeScript Type Check
         run: |
           cd frontend
           echo "Running TypeScript type check..."
-          npm run type-check
+          pnpm run type-check
 
       - name: ✅ Quality Check Passed
         run: echo "All quality checks passed! Proceeding with deployment..."
 
-  # 2. 准备项目（只有检查通过才执行）
   project-prepare:
     runs-on: ubuntu-latest
-    needs: code-quality # 关键：依赖检查通过
+    needs: code-quality
     steps:
       - name: 🛎️ Checkout code
         uses: actions/checkout@v4
@@ -66,7 +80,6 @@ jobs:
             cp /var/www/env/admin.frontend.env /var/www/website-admin/frontend/.env.production 
           EOF
 
-  # 3. 部署后端
   deploy-backend:
     runs-on: ubuntu-latest
     needs: project-prepare
@@ -95,7 +108,6 @@ jobs:
             echo "✅ Backend deployed!"
           EOF
 
-  # 4. 部署前端
   deploy-frontend:
     runs-on: ubuntu-latest
     needs: [project-prepare, deploy-backend]
