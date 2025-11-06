@@ -160,7 +160,11 @@ const SkillsPage = () => {
   return (
     <div>
       <div className="mb-8">{createDialog()}</div>
-      <DataTable columns={columns} data={skills || []} />
+      <DataTable
+        columns={columns}
+        data={skills || []}
+        pagination={{ pageIndex: 1, pageSize: 50 }}
+      />
     </div>
   );
 };

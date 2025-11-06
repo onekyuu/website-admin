@@ -12,6 +12,7 @@ class Project(models.Model):
     skills = models.ManyToManyField(
         'ProjectSkill', related_name='projects', blank=True)
     images = models.JSONField(default=list, blank=True)
+    is_featured = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'api_project'
