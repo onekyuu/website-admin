@@ -39,7 +39,8 @@ class ProjectTranslation(models.Model):
     language = models.CharField(
         max_length=2, choices=LANGUAGE_CHOICES, db_index=True)
     title = models.CharField(max_length=200)
-    description = models.TextField(null=True, blank=True)  # Markdown 格式
+    description = models.TextField(null=True, blank=True)
+    info = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

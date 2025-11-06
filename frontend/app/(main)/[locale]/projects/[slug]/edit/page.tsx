@@ -44,7 +44,7 @@ const ProjectEditPage = () => {
 
   const handleSaveProject = async (data: UpdateProjectData) => {
     const response = await patch<{ data: Project }, UpdateProjectData>(
-      `/project/detail/${data.id}/`,
+      `/projects/detail/${data.slug}/`,
       data,
     );
     return response.data;
@@ -54,7 +54,7 @@ const ProjectEditPage = () => {
     mutationFn: handleSaveProject,
     onSuccess: (data) => {
       toast.success("更新成功");
-      router.push("/posts");
+      router.push("/projects");
     },
     onError: (error) => {
       toast.error("更新失败");
@@ -86,12 +86,15 @@ const ProjectEditPage = () => {
         [language]: {
           title: data.title || "",
           description: data.description || "",
+          info: data.info || [],
         },
       },
       images: data.images,
       skill_ids: data.skill_ids || [],
     }));
   };
+
+  console.log("newProject:", newProject);
 
   const initialValues = useCallback(
     (lang: LanguageCode) => {
@@ -102,6 +105,7 @@ const ProjectEditPage = () => {
         title: projectData.translations[lang]?.title || "",
         description: projectData.translations[lang]?.description || "",
         skill_ids: projectData.skills.map((skill) => skill.id) || [],
+        info: projectData.translations[lang]?.info || [],
       };
     },
     [projectData],

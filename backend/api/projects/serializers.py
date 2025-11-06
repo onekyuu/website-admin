@@ -9,6 +9,20 @@ class ProjectSkillSerializer(serializers.ModelSerializer):
                   'image_url', 'created_at', 'updated_at']
 
 
+class ProjectTranslationSerializer(serializers.ModelSerializer):
+    info = serializers.ListField(
+        child=serializers.CharField(max_length=500),
+        required=False,
+        allow_empty=True,
+        min_length=0,
+        max_length=4
+    )
+
+    class Meta:
+        model = ProjectTranslation
+        fields = ['language', 'title', 'description', 'info']
+
+
 class ProjectSerializer(serializers.ModelSerializer):
     translations = serializers.SerializerMethodField()
     skills = ProjectSkillSerializer(many=True, read_only=True)
@@ -34,6 +48,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             t.language: {
                 "title": t.title,
                 "description": t.description,
+                "info": t.info,
             } for t in obj.translations.all()
         }
 

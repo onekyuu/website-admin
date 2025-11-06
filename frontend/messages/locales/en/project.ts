@@ -11,6 +11,11 @@ const Project = {
   edit: "Edit Project",
   delete: "Delete Project",
   isFeatured: "Is Featured",
+  infoMaxLength: "Maximum 4 info items allowed",
+  infoPlaceholder: "Enter project info",
+  info: "Info",
+  addInfo: "Add Info",
+  removeInfo: "Remove Info",
   skills: "Skills",
   selectSkill: "Select Skills",
   Skill: {

@@ -13,6 +13,7 @@ export interface ProjectBase {
 export interface ProjectTranslationData {
   title: string;
   description: string;
+  info: string[];
 }
 
 export type ProjectTranslation = {
@@ -34,6 +35,7 @@ export type CreateProjectData = CreateProjectBaseData & {
 export interface NewProjectData {
   title: string;
   description: string;
+  info: string[];
   images?: string[];
   skill_ids: number[];
   is_featured?: boolean;
@@ -41,6 +43,7 @@ export interface NewProjectData {
 
 export interface UpdateProjectExtraInfo {
   id: number;
+  slug: string;
 }
 
 export type UpdateProjectData = CreateProjectData & UpdateProjectExtraInfo;
