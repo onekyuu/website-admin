@@ -8,6 +8,7 @@ export interface ProjectBase {
   updated_at: string;
   images: string[];
   skills: Skill[];
+  is_featured: boolean;
 }
 export interface ProjectTranslationData {
   title: string;
@@ -34,6 +35,7 @@ export interface NewProjectData {
   description: string;
   images?: string[];
   skill_ids: number[];
+  is_featured?: boolean;
 }
 
 export interface UpdateProjectExtraInfo {

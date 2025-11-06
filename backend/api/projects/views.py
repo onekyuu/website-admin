@@ -194,7 +194,7 @@ class ProjectSkillListApiView(generics.ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return ProjectSkill.objects.all()
+        return ProjectSkill.objects.all().order_by('-created_at')
 
 
 class ProjectSkillDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
