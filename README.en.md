@@ -31,98 +31,6 @@ A full-featured personal website management system created for [OneKyuu Website]
 - **Charts**: Recharts 2.15.3
 - **Theme**: next-themes (Dark/Light mode)
 
-## 🚀 Deployment
-
-### Docker Compose Deployment (Recommended)
-
-1. **Clone the project**
-
-```bash
-git clone <repository-url>
-cd website-admin
-```
-
-2. **Configure environment variables**
-
-Backend (`backend/.env`):
-
-```bash
-# Database configuration
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_HOST=db
-DB_PORT=5432
-
-# Django configuration
-SECRET_KEY=your_django_secret_key
-DEBUG=False
-ALLOWED_HOSTS=your_domain.com
-
-# Alibaba Cloud OSS configuration
-OSS_ACCESS_KEY_ID=your_access_key_id
-OSS_ACCESS_KEY_SECRET=your_access_key_secret
-OSS_BUCKET_NAME=your_bucket_name
-OSS_ENDPOINT=your_oss_endpoint
-OSS_REGION=your_region
-```
-
-Frontend (`frontend/.env`):
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-3. **Start services**
-
-```bash
-docker-compose up -d
-```
-
-Access URLs:
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/swagger/
-
-### Local Development Deployment
-
-#### Backend
-
-```bash
-cd backend
-
-# Install dependencies
-pipenv install --dev
-
-# Activate virtual environment
-pipenv shell
-
-# Database migration
-python manage.py migrate
-
-# Create superuser
-python manage.py createsuperuser
-
-# Start development server
-python manage.py runserver
-```
-
-#### Frontend
-
-```bash
-cd frontend
-
-# Install dependencies
-pnpm install
-
-# Start development server
-pnpm dev
-
-# Build production version
-pnpm build
-```
-
 ## 📖 User Guide
 
 ### Feature Modules
@@ -240,6 +148,98 @@ website-admin/
 │   ├── lib/            # Utility functions
 │   └── messages/       # Internationalization texts
 └── docker-compose.yml  # Docker orchestration
+```
+
+## 🚀 Deployment
+
+### Docker Compose Deployment (Recommended)
+
+1. **Clone the project**
+
+```bash
+git clone <repository-url>
+cd website-admin
+```
+
+2. **Configure environment variables**
+
+Backend (`backend/.env`):
+
+```bash
+# Database configuration
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_HOST=db
+DB_PORT=5432
+
+# Django configuration
+SECRET_KEY=your_django_secret_key
+DEBUG=False
+ALLOWED_HOSTS=your_domain.com
+
+# Alibaba Cloud OSS configuration
+OSS_ACCESS_KEY_ID=your_access_key_id
+OSS_ACCESS_KEY_SECRET=your_access_key_secret
+OSS_BUCKET_NAME=your_bucket_name
+OSS_ENDPOINT=your_oss_endpoint
+OSS_REGION=your_region
+```
+
+Frontend (`frontend/.env`):
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+3. **Start services**
+
+```bash
+docker-compose up -d
+```
+
+Access URLs:
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/swagger/
+
+### Local Development Deployment
+
+#### Backend
+
+```bash
+cd backend
+
+# Install dependencies
+pipenv install --dev
+
+# Activate virtual environment
+pipenv shell
+
+# Database migration
+python manage.py migrate
+
+# Create superuser
+python manage.py createsuperuser
+
+# Start development server
+python manage.py runserver
+```
+
+#### Frontend
+
+```bash
+cd frontend
+
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Build production version
+pnpm build
 ```
 
 ## 💡 Development Guide

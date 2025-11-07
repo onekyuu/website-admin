@@ -31,98 +31,6 @@
 - **チャート**: Recharts 2.15.3
 - **テーマ**: next-themes (ダーク/ライトモード)
 
-## 🚀 デプロイ方法
-
-### Docker Compose デプロイ（推奨）
-
-1. **プロジェクトのクローン**
-
-```bash
-git clone <repository-url>
-cd website-admin
-```
-
-2. **環境変数の設定**
-
-バックエンド (`backend/.env`):
-
-```bash
-# データベース設定
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_HOST=db
-DB_PORT=5432
-
-# Django設定
-SECRET_KEY=your_django_secret_key
-DEBUG=False
-ALLOWED_HOSTS=your_domain.com
-
-# Alibaba Cloud OSS設定
-OSS_ACCESS_KEY_ID=your_access_key_id
-OSS_ACCESS_KEY_SECRET=your_access_key_secret
-OSS_BUCKET_NAME=your_bucket_name
-OSS_ENDPOINT=your_oss_endpoint
-OSS_REGION=your_region
-```
-
-フロントエンド (`frontend/.env`):
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-3. **サービスの起動**
-
-```bash
-docker-compose up -d
-```
-
-アクセス URL:
-
-- フロントエンド: http://localhost:3000
-- バックエンド API: http://localhost:8000
-- API ドキュメント: http://localhost:8000/swagger/
-
-### ローカル開発デプロイ
-
-#### バックエンド
-
-```bash
-cd backend
-
-# 依存関係のインストール
-pipenv install --dev
-
-# 仮想環境の有効化
-pipenv shell
-
-# データベースマイグレーション
-python manage.py migrate
-
-# スーパーユーザーの作成
-python manage.py createsuperuser
-
-# 開発サーバーの起動
-python manage.py runserver
-```
-
-#### フロントエンド
-
-```bash
-cd frontend
-
-# 依存関係のインストール
-pnpm install
-
-# 開発サーバーの起動
-pnpm dev
-
-# プロダクションビルド
-pnpm build
-```
-
 ## 📖 使用ガイド
 
 ### 機能モジュール
@@ -240,6 +148,98 @@ website-admin/
 │   ├── lib/            # ユーティリティ関数
 │   └── messages/       # 国際化テキスト
 └── docker-compose.yml  # Dockerオーケストレーション
+```
+
+## 🚀 デプロイ方法
+
+### Docker Compose デプロイ（推奨）
+
+1. **プロジェクトのクローン**
+
+```bash
+git clone <repository-url>
+cd website-admin
+```
+
+2. **環境変数の設定**
+
+バックエンド (`backend/.env`):
+
+```bash
+# データベース設定
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_HOST=db
+DB_PORT=5432
+
+# Django設定
+SECRET_KEY=your_django_secret_key
+DEBUG=False
+ALLOWED_HOSTS=your_domain.com
+
+# Alibaba Cloud OSS設定
+OSS_ACCESS_KEY_ID=your_access_key_id
+OSS_ACCESS_KEY_SECRET=your_access_key_secret
+OSS_BUCKET_NAME=your_bucket_name
+OSS_ENDPOINT=your_oss_endpoint
+OSS_REGION=your_region
+```
+
+フロントエンド (`frontend/.env`):
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+3. **サービスの起動**
+
+```bash
+docker-compose up -d
+```
+
+アクセス URL:
+
+- フロントエンド: http://localhost:3000
+- バックエンド API: http://localhost:8000
+- API ドキュメント: http://localhost:8000/swagger/
+
+### ローカル開発デプロイ
+
+#### バックエンド
+
+```bash
+cd backend
+
+# 依存関係のインストール
+pipenv install --dev
+
+# 仮想環境の有効化
+pipenv shell
+
+# データベースマイグレーション
+python manage.py migrate
+
+# スーパーユーザーの作成
+python manage.py createsuperuser
+
+# 開発サーバーの起動
+python manage.py runserver
+```
+
+#### フロントエンド
+
+```bash
+cd frontend
+
+# 依存関係のインストール
+pnpm install
+
+# 開発サーバーの起動
+pnpm dev
+
+# プロダクションビルド
+pnpm build
 ```
 
 ## 💡 開発ガイド
