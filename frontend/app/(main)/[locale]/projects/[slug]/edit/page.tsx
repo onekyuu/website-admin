@@ -22,6 +22,7 @@ import {
 import ProjectForm from "@/components/ProjectForm";
 import { LanguageCode } from "../../../posts/types";
 import { Skill } from "../../skills/types";
+import { useAuthStore } from "@/lib/stores/auth";
 
 const ProjectEditPage = () => {
   const params = useParams();
@@ -29,6 +30,9 @@ const ProjectEditPage = () => {
   const locale = params?.locale as LanguageCode;
   const t = useTranslations();
   const router = useRouter();
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
 
   const [newProject, setNewProject] = useImmer<UpdateProjectData | null>(null);
 
@@ -135,7 +139,7 @@ const ProjectEditPage = () => {
               <Button
                 key={"save-project"}
                 onClick={handleSave}
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || userPermissions?.is_guest}
               >
                 {mutation.isPending && <Loader2 className="animate-spin" />}
                 {t("Common.save")}

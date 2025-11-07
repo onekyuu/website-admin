@@ -84,6 +84,9 @@ const GalleryPage: FC = () => {
 
   const uploadMutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
+      if (userPermissions?.is_guest) {
+        throw new Error("Guest users are not allowed to upload photos.");
+      }
       const formData = new FormData();
       formData.append("file", values.file);
 
@@ -118,6 +121,7 @@ const GalleryPage: FC = () => {
       toast.success("Photo uploaded successfully");
       form.reset();
       setOpen(false);
+      setPreviewUrl(null);
       refetch();
     },
     onError: (error: Error) => {
@@ -131,11 +135,9 @@ const GalleryPage: FC = () => {
 
   const handleFileChange = (file: File | undefined) => {
     if (file) {
-      // 创建预览 URL
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     } else {
-      // 清除预览
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
       }
@@ -151,7 +153,6 @@ const GalleryPage: FC = () => {
     form.resetField("file");
   };
 
-  // 清理预览 URL
   React.useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -163,16 +164,7 @@ const GalleryPage: FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <Dialog
-          open={open}
-          onOpenChange={() => {
-            if (userPermissions?.is_guest) {
-              toast.error("Guest users are not allowed to upload photos.");
-              return;
-            }
-            setOpen(!open);
-          }}
-        >
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>{t("upload")}</Button>
           </DialogTrigger>
@@ -336,7 +328,12 @@ const GalleryPage: FC = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={uploadMutation.isPending}>
+                  <Button
+                    type="submit"
+                    disabled={
+                      uploadMutation.isPending || userPermissions?.is_guest
+                    }
+                  >
                     {uploadMutation.isPending ? "Uploading..." : "Upload"}
                   </Button>
                 </div>
