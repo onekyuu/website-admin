@@ -35,6 +35,7 @@ aliyun-python-sdk-sts = "*"
 python-dateutil = "*"
 alibabacloud-oss-v2 = "*"
 alibabacloud-credentials = "*"
+exifread = "*"
 
 [dev-packages]
 astroid = "==3.3.9"

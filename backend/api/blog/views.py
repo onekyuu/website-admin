@@ -335,7 +335,6 @@ class CategoryListApiView(generics.ListAPIView):
 class PostCategoryListApiView(generics.ListAPIView):
     serializer_class = PostSerializer
     permission_classes = [AllowAny]
-    pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
         category_slug = self.kwargs['category_slug']
