@@ -1,8 +1,8 @@
-# 📃 Website Admin Dashboard
+# 📃 OneKyuu Admin Dashboard
 
-**Languages**: [中文](./README.md) | **English** | [日本語](./README.ja.md)
+**Languages**: [中文](./README.md) | [日本語](./README.ja.md) | **English**
 
-A full-featured blog management system with article publishing, project showcase, gallery management and more. Supports multi-language switching (Chinese/English/Japanese), provides rich text editor and Alibaba Cloud OSS storage integration.
+A full-featured personal website management system created for [OneKyuu Website](https://keyu.wang), featuring article publishing, project showcase, gallery management and more. Supports multi-language switching (Chinese/English/Japanese), provides rich text editor and Alibaba Cloud OSS storage integration.
 
 ## 🛠 Tech Stack
 
