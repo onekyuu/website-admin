@@ -8,8 +8,9 @@ import Menu from "./locales/zh/menu";
 import Post from "./locales/zh/post";
 import Images from "./locales/zh/images";
 import Project from "./locales/zh/project";
+import Gallery from "./locales/zh/gallery";
 
-export default {
+const message = {
   Common,
   Login,
   Menu,
@@ -20,4 +21,7 @@ export default {
   Dashboard,
   Images,
   Project,
+  Gallery,
 };
+
+export default message;

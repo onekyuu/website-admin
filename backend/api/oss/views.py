@@ -1,449 +1,222 @@
 import json
 import os
-import uuid
-from datetime import datetime
-from urllib.parse import urlencode
-
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework import generics, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
 from api.core.permissions import CanDelete, IsAdminOrReadOnly
 from aliyunsdkcore.client import AcsClient
 from aliyunsdksts.request.v20150401 import AssumeRoleRequest
 from aliyunsdkcore.profile import region_provider
-
-import alibabacloud_oss_v2 as oss
-from alibabacloud_oss_v2.models import ListObjectsV2Request, DeleteObjectRequest, PutObjectRequest
-
+from api.oss.utils import (
+    upload_file_to_oss,
+    delete_file_from_oss,
+    delete_files_from_oss_batch,
+    list_files_from_oss
+)
 
 region_provider.modify_point('Sts', 'cn-hangzhou', 'sts.aliyuncs.com')
 
 
-def get_oss_credentials(request):
-    access_key_id = os.getenv('ALIYUN_OSS_ACCESS_KEY_ID')
-    access_key_secret = os.getenv('ALIYUN_OSS_ACCESS_KEY_SECRET')
-    role_arn = os.getenv('OSS_ROLE_ARN')
-    bucket_name = os.getenv('OSS_BUCKET')
+class OSSCredentialsView(APIView):
+    permission_classes = []
 
-    try:
-        client = AcsClient(
-            access_key_id,
-            access_key_secret,
-            'cn-shanghai',
-            timeout=20
-        )
-
-        request = AssumeRoleRequest.AssumeRoleRequest()
-        request.set_RoleArn(role_arn)
-        request.set_RoleSessionName('django-oss-upload')
-        request.set_DurationSeconds(900)
-
-        policy = {
-            "Statement": [{
-                "Effect": "Allow",
-                "Action": ["oss:PutObject", "oss:GetObject"],
-                "Resource": [f"acs:oss:*:*:{bucket_name}/uploads/*"]
-            }],
-            "Version": "1"
-        }
-        request.set_Policy(json.dumps(policy))
-
-        response = client.do_action_with_exception(request)
-        result = json.loads(response)
-        return JsonResponse({
-            'StatusCode': 200,
-            'AccessKeyId': result['Credentials']['AccessKeyId'],
-            'AccessKeySecret': result['Credentials']['AccessKeySecret'],
-            'SecurityToken': result['Credentials']['SecurityToken'],
-            'Expiration': result['Credentials']['Expiration'],
-            'Region': os.getenv('OSS_REGION'),
-            'Bucket': bucket_name
-        })
-
-    except Exception as e:
-        print(f"[ERROR] STS Request Failed: {str(e)}")
-        return JsonResponse(
-            {'error': 'STS Credential Generation Failed', 'detail': str(e)},
-            status=500
-        )
-
-
-@csrf_exempt
-@api_view(['POST'])
-@parser_classes([MultiPartParser, FormParser])  # 添加这行！
-@permission_classes([IsAuthenticated, IsAdminOrReadOnly])
-def upload_oss_image(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    try:
-        if 'file' not in request.FILES:
-            return JsonResponse({'error': 'No file provided'}, status=400)
-
-        file = request.FILES['file']
-
-        allowed_extensions = ['.jpg', '.jpeg', '.png',
-                              '.gif', '.webp', '.svg', '.bmp', '.ico']
-        file_ext = os.path.splitext(file.name)[1].lower()
-
-        if file_ext not in allowed_extensions:
-            return JsonResponse({
-                'error': f'Invalid file type. Allowed: {", ".join(allowed_extensions)}'
-            }, status=400)
-
-        max_size = 20 * 1024 * 1024
-        if file.size > max_size:
-            return JsonResponse({
-                'error': f'File too large. Maximum size: {max_size / 1024 / 1024}MB'
-            }, status=400)
-
-        unique_id = str(uuid.uuid4())[:6]
-        original_name = os.path.splitext(file.name)[0]
-        new_filename = f"{original_name}_{unique_id}{file_ext}"
-
-        directory = request.POST.get('directory', 'uploads')
-        object_key = f"{directory}/{new_filename}"
-
+    def get(self, request):
+        access_key_id = os.getenv('ALIYUN_OSS_ACCESS_KEY_ID')
+        access_key_secret = os.getenv('ALIYUN_OSS_ACCESS_KEY_SECRET')
+        role_arn = os.getenv('OSS_ROLE_ARN')
         bucket_name = os.getenv('OSS_BUCKET')
-        region = os.getenv('OSS_REGION')
-        endpoint = f"https://{region}.aliyuncs.com"
-        actual_region = region.replace(
-            'oss-', '') if region.startswith('oss-') else region
-
-        credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
-
-        cfg = oss.config.load_default()
-        cfg.credentials_provider = credentials_provider
-        cfg.region = actual_region
-        cfg.endpoint = endpoint
-
-        client = oss.Client(cfg)
 
         try:
-            file_content = file.read()
-
-            result = client.put_object(
-                oss.PutObjectRequest(
-                    bucket=bucket_name,
-                    key=object_key,
-                    body=file_content
-                ),
+            client = AcsClient(
+                access_key_id,
+                access_key_secret,
+                'cn-shanghai',
+                timeout=20
             )
-            print(
-                f"[INFO] Successfully uploaded: {object_key}, status: {result.status_code if result else 'N/A'}")
 
-            file_url = f"https://{bucket_name}.{region}.aliyuncs.com/{object_key}"
-            print(f"[INFO] File URL: {file_url}")
+            request_obj = AssumeRoleRequest.AssumeRoleRequest()
+            request_obj.set_RoleArn(role_arn)
+            request_obj.set_RoleSessionName('django-oss-upload')
+            request_obj.set_DurationSeconds(900)
 
-            return JsonResponse({
-                'success': True,
-                'message': 'File uploaded successfully',
-                'data': {
-                    'url': file_url,
-                    'object_key': object_key,
-                    'name': object_key,
-                    'filename': new_filename,
-                    'size': file.size,
-                    'content_type': file.content_type,
-                }
-            }, status=201)
-
-        except Exception as upload_error:
-            error_msg = str(upload_error)
-            print(f"[ERROR] OSS Upload Operation Failed: {error_msg}")
-            return JsonResponse({
-                'error': 'Upload operation failed',
-                'detail': error_msg
-            }, status=500)
-
-    except Exception as e:
-        print(f"[ERROR] OSS Upload Failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse(
-            {'error': 'OSS Upload Failed', 'detail': str(e)},
-            status=500
-        )
-
-
-def list_oss_images(request):
-    bucket_name = os.getenv('OSS_BUCKET')
-    region = os.getenv('OSS_REGION')
-    endpoint = f"https://{region}.aliyuncs.com"
-
-    page = int(request.GET.get('page', 1))
-    page_size = int(request.GET.get('page_size', 50))
-
-    directory = request.GET.get('directory', '')
-    if directory and not directory.endswith('/'):
-        directory += '/'
-
-    prefix = directory if directory else request.GET.get('prefix', 'uploads/')
-
-    search = request.GET.get('search', '')
-
-    credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
-
-    cfg = oss.config.load_default()
-    cfg.credentials_provider = credentials_provider
-    cfg.region = 'cn-shanghai'
-    cfg.endpoint = endpoint
-
-    client = oss.Client(cfg)
-
-    try:
-        req = ListObjectsV2Request(
-            bucket=bucket_name,
-            prefix=prefix,
-            max_keys=100,
-        )
-
-        paginator = client.list_objects_v2_paginator()
-
-        all_images = []
-        image_extensions = ['.jpg', '.jpeg', '.png',
-                            '.gif', '.webp', '.svg', '.bmp', '.ico']
-
-        for page_result in paginator.iter_page(req):
-            if page_result.contents:
-                for obj in page_result.contents:
-                    if not obj.key.endswith('/'):
-                        if any(obj.key.lower().endswith(ext) for ext in image_extensions):
-                            if search and search not in obj.key.lower():
-                                continue
-
-                            path_parts = obj.key.split('/')
-
-                            prefix_parts = prefix.rstrip(
-                                '/').split('/') if prefix else []
-                            relative_parts = path_parts[len(
-                                prefix_parts):-1] if len(prefix_parts) > 0 else path_parts[:-1]
-
-                            if relative_parts:
-                                directory_path = '/'.join(relative_parts)
-                                directory_name = relative_parts[-1]
-                            else:
-                                directory_path = ''
-                                directory_name = prefix.rstrip(
-                                    '/').split('/')[-1] if prefix else 'root'
-
-                            all_images.append({
-                                'name': obj.key,
-                                'url': f"https://{bucket_name}.{region}.aliyuncs.com/{obj.key}",
-                                'size': obj.size,
-                                'lastModified': obj.last_modified.isoformat() if obj.last_modified else None,
-                                'etag': obj.etag,
-                                'directory': directory_path,
-                                'directoryName': directory_name,
-                                'fileName': path_parts[-1],
-                                'fullPath': obj.key,
-                            })
-
-        all_images.sort(key=lambda x: x['lastModified'] or '', reverse=True)
-
-        total_count = len(all_images)
-        start_index = (page - 1) * page_size
-        end_index = start_index + page_size
-
-        paginated_images = all_images[start_index:end_index]
-
-        has_next = end_index < total_count
-        has_previous = page > 1
-
-        base_url = request.build_absolute_uri(request.path)
-
-        def build_page_url(page_num):
-            params = {
-                'page': page_num,
-                'page_size': page_size,
+            policy = {
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Action": ["oss:PutObject", "oss:GetObject"],
+                    "Resource": [f"acs:oss:*:*:{bucket_name}/uploads/*"]
+                }],
+                "Version": "1"
             }
-            if directory:
-                params['directory'] = directory
-            elif prefix != 'uploads/':
-                params['prefix'] = prefix
-            if search:
-                params['search'] = search
-            return f"{base_url}?{urlencode(params)}"
+            request_obj.set_Policy(json.dumps(policy))
 
-        next_url = build_page_url(page + 1) if has_next else None
-        previous_url = build_page_url(page - 1) if has_previous else None
+            response = client.do_action_with_exception(request_obj)
+            result = json.loads(response)
 
-        return JsonResponse({
-            'count': total_count,
-            'next': next_url,
-            'previous': previous_url,
-            'results': paginated_images,
-            'page': page,
-            'page_size': page_size,
-            'total_pages': (total_count + page_size - 1) // page_size,
-            'prefix': prefix,
-        })
+            return Response({
+                'StatusCode': 200,
+                'AccessKeyId': result['Credentials']['AccessKeyId'],
+                'AccessKeySecret': result['Credentials']['AccessKeySecret'],
+                'SecurityToken': result['Credentials']['SecurityToken'],
+                'Expiration': result['Credentials']['Expiration'],
+                'Region': os.getenv('OSS_REGION'),
+                'Bucket': bucket_name
+            })
 
-    except Exception as e:
-        print(f"[ERROR] OSS List Request Failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse(
-            {'error': 'OSS List Failed', 'detail': str(e)},
-            status=500
-        )
-
-
-@csrf_exempt
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated, CanDelete])
-def delete_oss_image(request):
-    if request.method != 'DELETE':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-    try:
-        data = json.loads(request.body)
-        object_key = data.get('object_key')
-
-        if not object_key:
-            return JsonResponse({'error': 'object_key is required'}, status=400)
-
-        bucket_name = os.getenv('OSS_BUCKET')
-        region = os.getenv('OSS_REGION')
-        endpoint = f"https://{region}.aliyuncs.com"
-        actual_region = region.replace(
-            'oss-', '') if region.startswith('oss-') else region
-
-        credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
-
-        cfg = oss.config.load_default()
-        cfg.credentials_provider = credentials_provider
-        cfg.region = actual_region
-        cfg.endpoint = endpoint
-
-        client = oss.Client(cfg)
-
-        try:
-            delete_request = DeleteObjectRequest(
-                bucket=bucket_name,
-                key=object_key
+        except Exception as e:
+            print(f"[ERROR] STS Request Failed: {str(e)}")
+            return Response(
+                {'error': 'STS Credential Generation Failed',
+                    'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-            result = client.delete_object(delete_request)
-            print(
-                f"[INFO] Successfully deleted: {object_key}, status: {result.status_code if result else 'N/A'}")
-            return JsonResponse({
-                'message': 'Image deleted successfully',
-                'object_key': object_key
-            }, status=200)
-
-        except Exception as delete_error:
-            error_msg = str(delete_error)
-            print(f"[ERROR] OSS Delete Operation Failed: {error_msg}")
-
-            if 'NoSuchKey' in error_msg or 'does not exist' in error_msg:
-                return JsonResponse({
-                    'message': 'Image already deleted or does not exist',
-                    'object_key': object_key
-                }, status=200)
-
-            return JsonResponse({
-                'error': 'Delete operation failed',
-                'detail': error_msg,
-                'object_key': object_key
-            }, status=500)
-
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        print(f"[ERROR] OSS Delete Failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse(
-            {'error': 'OSS Delete Failed', 'detail': str(e)},
-            status=500
-        )
 
 
-@csrf_exempt
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated, CanDelete])
-def delete_oss_images_batch(request):
-    if request.method != 'DELETE':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+class OSSImageUploadView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
 
-    try:
-        data = json.loads(request.body)
-        object_keys = data.get('object_keys', [])
-
-        if not object_keys or not isinstance(object_keys, list):
-            return JsonResponse({'error': 'object_keys must be a non-empty array'}, status=400)
-
-        if len(object_keys) > 1000:
-            return JsonResponse({'error': 'Maximum 1000 objects can be deleted at once'}, status=400)
-
-        bucket_name = os.getenv('OSS_BUCKET')
-        region = os.getenv('OSS_REGION')
-        endpoint = f"https://{region}.aliyuncs.com"
-        actual_region = region.replace(
-            'oss-', '') if region.startswith('oss-') else region
-
-        credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
-
-        cfg = oss.config.load_default()
-        cfg.credentials_provider = credentials_provider
-        cfg.region = actual_region
-        cfg.endpoint = endpoint
-
-        client = oss.Client(cfg)
-
-        # 批量删除对象
-        deleted_objects = []
-        failed_objects = []
-
-        for object_key in object_keys:
-            try:
-                # 使用 DeleteObjectRequest
-                delete_request = DeleteObjectRequest(
-                    bucket=bucket_name,
-                    key=object_key
+    def post(self, request):
+        try:
+            if 'file' not in request.FILES:
+                return Response(
+                    {'error': 'No file provided'},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
-                result = client.delete_object(delete_request)
-                deleted_objects.append(object_key)
-                print(f"[INFO] Successfully deleted: {object_key}")
+            file = request.FILES['file']
+            directory = request.POST.get('directory', 'uploads')
 
-            except Exception as e:
-                error_msg = str(e)
+            result = upload_file_to_oss(file, directory)
 
-                # 如果对象不存在，也认为删除成功
-                if 'NoSuchKey' in error_msg or 'does not exist' in error_msg:
-                    deleted_objects.append(object_key)
-                    print(
-                        f"[INFO] Object already deleted or does not exist: {object_key}")
-                else:
-                    # 其他错误记录为失败
-                    failed_objects.append({
-                        'key': object_key,
-                        'error': error_msg
-                    })
-                    print(
-                        f"[ERROR] Failed to delete {object_key}: {error_msg}")
+            return Response({
+                'success': True,
+                'message': 'File uploaded successfully',
+                'data': result
+            }, status=status.HTTP_201_CREATED)
 
-        # 根据是否有失败项决定返回状态码
-        status_code = 200 if len(failed_objects) == 0 else 207  # 207 表示部分成功
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            print(f"[ERROR] Upload Failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': 'OSS Upload Failed', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        return JsonResponse({
-            'message': f'Deleted {len(deleted_objects)} images',
-            'deleted': deleted_objects,
-            'failed': failed_objects,
-            'total_requested': len(object_keys),
-            'total_deleted': len(deleted_objects),
-            'total_failed': len(failed_objects)
-        }, status=status_code)
 
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        print(f"[ERROR] OSS Batch Delete Failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse(
-            {'error': 'OSS Batch Delete Failed', 'detail': str(e)},
-            status=500
-        )
+class OSSImageListView(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        try:
+            page = int(request.GET.get('page', 1))
+            page_size = int(request.GET.get('page_size', 50))
+            directory = request.GET.get('directory', '')
+            search = request.GET.get('search', '')
+
+            if directory and not directory.endswith('/'):
+                directory += '/'
+            prefix = directory if directory else request.GET.get(
+                'prefix', 'uploads/')
+
+            result = list_files_from_oss(
+                prefix=prefix,
+                search=search,
+                page=page,
+                page_size=page_size,
+                image_only=True
+            )
+
+            return Response({
+                'count': result['count'],
+                'results': result['results'],
+                'page': result['page'],
+                'page_size': result['pageSize'],
+                'total_pages': result['totalPages'],
+                'prefix': result['prefix'],
+            })
+
+        except Exception as e:
+            print(f"[ERROR] List Failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': 'OSS List Failed', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class OSSImageDeleteView(APIView):
+    permission_classes = [IsAuthenticated, CanDelete]
+
+    def delete(self, request):
+        try:
+            object_key = request.data.get('object_key')
+
+            if not object_key:
+                return Response(
+                    {'error': 'object_key is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            success = delete_file_from_oss(object_key)
+
+            if success:
+                return Response({
+                    'message': 'Image deleted successfully',
+                    'object_key': object_key
+                })
+            else:
+                return Response({
+                    'error': 'Delete operation failed',
+                    'object_key': object_key
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            print(f"[ERROR] Delete Failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': 'OSS Delete Failed', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class OSSImageBatchDeleteView(APIView):
+    permission_classes = [IsAuthenticated, CanDelete]
+
+    def delete(self, request):
+        try:
+            object_keys = request.data.get('object_keys', [])
+
+            result = delete_files_from_oss_batch(object_keys)
+
+            response_status = status.HTTP_200_OK if result[
+                'total_failed'] == 0 else status.HTTP_207_MULTI_STATUS
+
+            return Response({
+                'message': f"Deleted {result['total_deleted']} images",
+                **result
+            }, status=response_status)
+
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            print(f"[ERROR] Batch Delete Failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': 'OSS Batch Delete Failed', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

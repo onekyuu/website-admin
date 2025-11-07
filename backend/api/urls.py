@@ -7,6 +7,7 @@ urlpatterns = [
 
     # 博客功能
     path('', include('api.blog.urls')),
+
     # OSS 功能
     path('', include('api.oss.urls')),
 
@@ -14,5 +15,5 @@ urlpatterns = [
     path('', include('api.projects.urls')),
 
     # 图库管理
-    # path('', include('api.gallery.urls')),
+    path('', include('api.gallery.urls')),
 ]
