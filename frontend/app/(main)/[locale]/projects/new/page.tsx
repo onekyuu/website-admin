@@ -33,6 +33,7 @@ const ProjectCreatePage = () => {
       [locale]: {
         title: "",
         description: "",
+        info: [],
       },
     },
   });
@@ -45,6 +46,7 @@ const ProjectCreatePage = () => {
         [language]: {
           title: data.title || "",
           description: data.description || "",
+          info: data.info || [],
         },
       },
       images: data.images,
