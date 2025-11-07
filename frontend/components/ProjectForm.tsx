@@ -22,6 +22,7 @@ import MarkdownEditor from "./MarkdownEditor";
 import { NewProjectData } from "@/app/(main)/[locale]/projects/types";
 import { Switch } from "./ui/switch";
 import { info } from "console";
+import { useAuthStore } from "@/lib/stores/auth";
 
 interface ProjectFormProps {
   skills: Skill[];
@@ -38,6 +39,9 @@ const ProjectForm: FC<ProjectFormProps> = ({
 }) => {
   const t = useTranslations("Project");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const userPermissions = useAuthStore(
+    (state) => state.allUserData,
+  )?.permissions;
   const skillOptions: Option[] = skills.map((skill) => ({
     value: skill.id.toString(),
     label: skill.name,
@@ -67,6 +71,9 @@ const ProjectForm: FC<ProjectFormProps> = ({
   });
 
   const uploadImageToOSS = async (file: File): Promise<string> => {
+    if (userPermissions?.is_guest) {
+      throw new Error("Guest users are not allowed to upload images.");
+    }
     const formData = new FormData();
     formData.append("file", file);
     formData.append("directory", "uploads/projects");
@@ -79,6 +86,9 @@ const ProjectForm: FC<ProjectFormProps> = ({
   };
 
   const deleteImageFromOSS = async (imageUrl: string): Promise<void> => {
+    if (userPermissions?.is_guest) {
+      throw new Error("Guest users are not allowed to delete images.");
+    }
     try {
       await del("/oss/images/delete/", {
         url: imageUrl,

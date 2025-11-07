@@ -39,18 +39,6 @@ interface PostFormProps {
   onChange: (data: PostFormInitialData) => void;
 }
 
-const uploadImageToOSS = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("directory", "uploads/blog");
-
-  const response = await post<{ data: { url: string } }, FormData>(
-    "/oss/images/upload/",
-    formData,
-  );
-  return response.data.url;
-};
-
 export const PostForm: React.FC<PostFormProps> = ({
   mode,
   initialValues,
@@ -102,7 +90,26 @@ export const PostForm: React.FC<PostFormProps> = ({
     },
   });
 
+  const uploadImageToOSS = async (file: File): Promise<string> => {
+    if (userPermissions?.is_guest) {
+      throw new Error("Guest users are not allowed to upload images.");
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("directory", "uploads/blog");
+
+    const response = await post<{ data: { url: string } }, FormData>(
+      "/oss/images/upload/",
+      formData,
+    );
+    return response.data.url;
+  };
+
   const handleDeleteImage = async () => {
+    if (userPermissions?.is_guest) {
+      toast.error("Guest users are not allowed to delete images.");
+      return;
+    }
     const currentImage = form.getValues("image");
     if (!currentImage) return;
 
