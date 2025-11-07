@@ -31,98 +31,6 @@
 - **图表**: Recharts 2.15.3
 - **主题**: next-themes (深色/浅色模式)
 
-## 🚀 部署方式
-
-### Docker Compose 部署（推荐）
-
-1. **克隆项目**
-
-```bash
-git clone <repository-url>
-cd website-admin
-```
-
-2. **配置环境变量**
-
-后端 (`backend/.env`):
-
-```bash
-# 数据库配置
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_HOST=db
-DB_PORT=5432
-
-# Django配置
-SECRET_KEY=your_django_secret_key
-DEBUG=False
-ALLOWED_HOSTS=your_domain.com
-
-# 阿里云OSS配置
-OSS_ACCESS_KEY_ID=your_access_key_id
-OSS_ACCESS_KEY_SECRET=your_access_key_secret
-OSS_BUCKET_NAME=your_bucket_name
-OSS_ENDPOINT=your_oss_endpoint
-OSS_REGION=your_region
-```
-
-前端 (`frontend/.env`):
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-3. **启动服务**
-
-```bash
-docker-compose up -d
-```
-
-访问地址:
-
-- 前端: http://localhost:3000
-- 后端 API: http://localhost:8000
-- API 文档: http://localhost:8000/swagger/
-
-### 本地开发部署
-
-#### 后端
-
-```bash
-cd backend
-
-# 安装依赖
-pipenv install --dev
-
-# 激活虚拟环境
-pipenv shell
-
-# 数据库迁移
-python manage.py migrate
-
-# 创建超级用户
-python manage.py createsuperuser
-
-# 启动开发服务器
-python manage.py runserver
-```
-
-#### 前端
-
-```bash
-cd frontend
-
-# 安装依赖
-pnpm install
-
-# 启动开发服务器
-pnpm dev
-
-# 构建生产版本
-pnpm build
-```
-
 ## 📖 使用介绍
 
 ### 功能模块
@@ -240,6 +148,98 @@ website-admin/
 │   ├── lib/            # 工具函数
 │   └── messages/       # 国际化文本
 └── docker-compose.yml  # Docker编排
+```
+
+## 🚀 部署方式
+
+### Docker Compose 部署（推荐）
+
+1. **克隆项目**
+
+```bash
+git clone <repository-url>
+cd website-admin
+```
+
+2. **配置环境变量**
+
+后端 (`backend/.env`):
+
+```bash
+# 数据库配置
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_HOST=db
+DB_PORT=5432
+
+# Django配置
+SECRET_KEY=your_django_secret_key
+DEBUG=False
+ALLOWED_HOSTS=your_domain.com
+
+# 阿里云OSS配置
+OSS_ACCESS_KEY_ID=your_access_key_id
+OSS_ACCESS_KEY_SECRET=your_access_key_secret
+OSS_BUCKET_NAME=your_bucket_name
+OSS_ENDPOINT=your_oss_endpoint
+OSS_REGION=your_region
+```
+
+前端 (`frontend/.env`):
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+3. **启动服务**
+
+```bash
+docker-compose up -d
+```
+
+访问地址:
+
+- 前端: http://localhost:3000
+- 后端 API: http://localhost:8000
+- API 文档: http://localhost:8000/swagger/
+
+### 本地开发部署
+
+#### 后端
+
+```bash
+cd backend
+
+# 安装依赖
+pipenv install --dev
+
+# 激活虚拟环境
+pipenv shell
+
+# 数据库迁移
+python manage.py migrate
+
+# 创建超级用户
+python manage.py createsuperuser
+
+# 启动开发服务器
+python manage.py runserver
+```
+
+#### 前端
+
+```bash
+cd frontend
+
+# 安装依赖
+pnpm install
+
+# 启动开发服务器
+pnpm dev
+
+# 构建生产版本
+pnpm build
 ```
 
 ## 💡 开发指南
