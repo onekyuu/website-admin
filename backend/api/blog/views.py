@@ -351,6 +351,10 @@ class PostListAPIView(generics.ListAPIView):
     def get_queryset(self):
         return Post.objects.filter(status='Active')
 
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return response
+
 
 class PostDetailAPIView(generics.RetrieveAPIView):
     serializer_class = PostSerializer

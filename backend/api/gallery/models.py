@@ -79,7 +79,8 @@ class Gallery(models.Model):
     def get_exif_summary(self):
         """Get EXIF information summary"""
         parts = []
-        params = self.shooting_params or {}
+        params = self.shooting_params if isinstance(
+            self.shooting_params, dict) else {}
 
         if params.get('focal_length'):
             parts.append(params['focal_length'])
