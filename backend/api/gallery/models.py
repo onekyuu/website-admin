@@ -4,8 +4,7 @@ import shortuuid
 
 
 class Gallery(models.Model):
-    slug = models.SlugField(max_length=255, default='',
-                            blank=True, null=True)  # 暂时允许 null
+    slug = models.SlugField(unique=True, max_length=255, default='')  # 改回 unique=True，移除 null=True
     title = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
     image_url = models.URLField(max_length=500)
