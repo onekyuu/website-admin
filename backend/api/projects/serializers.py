@@ -36,11 +36,12 @@ class ProjectSerializer(serializers.ModelSerializer):
         required=False,
         default=list
     )
+    need_ai_generate = serializers.BooleanField(required=False)
 
     class Meta:
         model = Project
         fields = ["id", "translations", "slug", "created_by",
-                  "created_at", "updated_at", "skills", "skill_ids", "images", "is_featured"]
+                  "created_at", "updated_at", "skills", "skill_ids", "images", "is_featured", "need_ai_generate"]
         read_only_fields = ['slug', 'created_by', 'created_at', 'updated_at']
 
     def get_translations(self, obj):

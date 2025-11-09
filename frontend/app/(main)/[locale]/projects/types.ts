@@ -9,6 +9,7 @@ export interface ProjectBase {
   images: string[];
   skills: Skill[];
   is_featured: boolean;
+  need_ai_generate: boolean;
 }
 export interface ProjectTranslationData {
   title: string;
@@ -25,7 +26,8 @@ export type Project = ProjectBase & { translations: ProjectTranslation };
 export interface CreateProjectBaseData {
   images?: string[];
   skill_ids?: number[];
-  is_featured?: boolean;
+  is_featured: boolean;
+  need_ai_generate: boolean;
 }
 
 export type CreateProjectData = CreateProjectBaseData & {
@@ -38,7 +40,8 @@ export interface NewProjectData {
   info: string[];
   images?: string[];
   skill_ids: number[];
-  is_featured?: boolean;
+  is_featured: boolean;
+  need_ai_generate: boolean;
 }
 
 export interface UpdateProjectExtraInfo {

@@ -10,7 +10,7 @@ class GallerySerializer(serializers.ModelSerializer):
     class Meta:
         model = Gallery
         fields = [
-            'id', 'title', 'description', 'image_url', 'thumbnail_url',
+            'id', 'slug', 'title', 'description', 'image_url', 'thumbnail_url',
             'taken_at', 'camera_make', 'camera_model', 'lens_model',
             'shooting_params', 'photo_properties', 'location_info',
             'category', 'tags',
@@ -18,7 +18,7 @@ class GallerySerializer(serializers.ModelSerializer):
             'uploaded_by', 'uploaded_by_username', 'exif_summary',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['uploaded_by',
+        read_only_fields = ['id', 'slug', 'uploaded_by',
                             'view_count', 'created_at', 'updated_at']
 
     def get_exif_summary(self, obj):

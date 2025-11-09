@@ -28,6 +28,9 @@ class ProjectCreateApiView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         project = serializer.save(created_by=request.user)
 
+        # 检查是否需要 AI 翻译
+        need_ai_generate = request.data.get('need_ai_generate', True)
+
         # 按优先级查找源语言：中文 > 日语 > 英语
         supported_languages = ['zh', 'ja', 'en']
 
@@ -57,8 +60,8 @@ class ProjectCreateApiView(generics.CreateAPIView):
                     description=source_translation.get('description', ''),
                     info=source_translation.get('info', []),
                 )
-            else:
-                # 其他语言自动翻译
+            elif need_ai_generate:
+                # 需要 AI 翻译时才翻译其他语言
                 translated_title = translate_text(
                     source_translation.get('title', ''),
                     source_lang,
@@ -155,6 +158,9 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             response_serializer = self.get_serializer(project)
             return Response(response_serializer.data)
 
+        # 检查是否需要 AI 翻译
+        need_ai_generate = request.data.get('need_ai_generate', project.need_ai_generate)
+
         # 按优先级查找源语言：中文 > 日语 > 英语
         supported_languages = ['zh', 'ja', 'en']
 
@@ -185,8 +191,8 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                         'info': source_translation.get('info', []),
                     }
                 )
-            else:
-                # 其他语言自动翻译
+            elif need_ai_generate:
+                # 需要 AI 翻译时才翻译其他语言
                 translated_title = translate_text(
                     source_translation.get('title', ''),
                     source_lang,

@@ -4,20 +4,38 @@ from datetime import datetime
 from io import BytesIO
 import os
 import exifread
+from django.utils import timezone
+
+
+def make_aware_datetime(dt):
+    """Convert naive datetime to aware datetime"""
+    try:
+        if dt is None:
+            return None
+
+        if timezone.is_aware(dt):
+            return dt
+
+        return timezone.make_aware(dt, timezone.get_current_timezone())
+    except Exception:
+        return None
 
 
 def get_decimal_from_dms(dms, ref):
     """Convert GPS DMS format to decimal degrees"""
-    degrees = dms[0]
-    minutes = dms[1] / 60.0
-    seconds = dms[2] / 3600.0
+    try:
+        degrees = dms[0]
+        minutes = dms[1] / 60.0
+        seconds = dms[2] / 3600.0
 
-    decimal = degrees + minutes + seconds
+        decimal = degrees + minutes + seconds
 
-    if ref in ['S', 'W']:
-        decimal = -decimal
+        if ref in ['S', 'W']:
+            decimal = -decimal
 
-    return decimal
+        return decimal
+    except Exception:
+        return None
 
 
 def extract_exif_with_exifread(image_file):
@@ -32,24 +50,16 @@ def extract_exif_with_exifread(image_file):
             'location_info': {}
         }
 
-        print(f"[INFO] exifread found {len(tags)} tags")
-
-        # Print all available tags for debugging
-        for tag, value in tags.items():
-            if not tag.startswith('JPEGThumbnail') and not tag.startswith('Thumbnail'):
-                print(f"[DEBUG] exifread Tag: {tag} = {value}")
-
         # Taken time
         for date_tag in ['EXIF DateTimeOriginal', 'EXIF DateTime', 'Image DateTime']:
             if date_tag in tags:
                 try:
-                    exif_data['taken_at'] = datetime.strptime(
+                    naive_dt = datetime.strptime(
                         str(tags[date_tag]), '%Y:%m:%d %H:%M:%S'
                     )
-                    print(
-                        f"[INFO] Found taken_at from {date_tag}: {exif_data['taken_at']}")
+                    exif_data['taken_at'] = make_aware_datetime(naive_dt)
                     break
-                except:
+                except Exception:
                     pass
 
         # Camera
@@ -70,10 +80,8 @@ def extract_exif_with_exifread(image_file):
                 else:
                     focal = float(focal_str)
                 exif_data['shooting_params']['focal_length'] = f"{focal:.0f}mm"
-                print(
-                    f"[INFO] Found focal_length: {exif_data['shooting_params']['focal_length']}")
-            except Exception as e:
-                print(f"[WARNING] Failed to parse focal_length: {e}")
+            except Exception:
+                pass
 
         # Aperture
         if 'EXIF FNumber' in tags:
@@ -85,10 +93,8 @@ def extract_exif_with_exifread(image_file):
                 else:
                     f_num = float(f_str)
                 exif_data['shooting_params']['aperture'] = f"f/{f_num:.1f}"
-                print(
-                    f"[INFO] Found aperture: {exif_data['shooting_params']['aperture']}")
-            except Exception as e:
-                print(f"[WARNING] Failed to parse aperture: {e}")
+            except Exception:
+                pass
 
         # Shutter speed
         if 'EXIF ExposureTime' in tags:
@@ -103,10 +109,8 @@ def extract_exif_with_exifread(image_file):
                         exif_data['shooting_params']['shutter_speed'] = f"{speed:.2f}s"
                 else:
                     exif_data['shooting_params']['shutter_speed'] = f"{exp_str}s"
-                print(
-                    f"[INFO] Found shutter_speed: {exif_data['shooting_params']['shutter_speed']}")
-            except Exception as e:
-                print(f"[WARNING] Failed to parse shutter_speed: {e}")
+            except Exception:
+                pass
 
         # ISO
         for iso_tag in ['EXIF ISOSpeedRatings', 'EXIF ISO', 'EXIF PhotographicSensitivity']:
@@ -114,39 +118,48 @@ def extract_exif_with_exifread(image_file):
                 try:
                     iso_value = str(tags[iso_tag])
                     exif_data['shooting_params']['iso'] = f"ISO {iso_value}"
-                    print(
-                        f"[INFO] Found ISO from {iso_tag}: {exif_data['shooting_params']['iso']}")
                     break
-                except Exception as e:
-                    print(f"[WARNING] Failed to parse ISO: {e}")
+                except Exception:
+                    pass
 
-        # GPS
-        if 'GPS GPSLatitude' in tags and 'GPS GPSLatitudeRef' in tags:
-            try:
+        # GPS - Enhanced extraction
+        try:
+            if 'GPS GPSLatitude' in tags and 'GPS GPSLatitudeRef' in tags:
                 lat = tags['GPS GPSLatitude'].values
                 lat_ref = str(tags['GPS GPSLatitudeRef'])
                 lat_decimal = get_decimal_from_dms(
                     [float(x.num)/float(x.den) for x in lat], lat_ref)
-                exif_data['location_info']['latitude'] = str(lat_decimal)
-            except Exception as e:
-                print(f"[WARNING] Failed to parse GPS latitude: {e}")
 
-        if 'GPS GPSLongitude' in tags and 'GPS GPSLongitudeRef' in tags:
-            try:
+                if lat_decimal is not None:
+                    exif_data['location_info']['latitude'] = f"{lat_decimal:.6f}"
+
+            if 'GPS GPSLongitude' in tags and 'GPS GPSLongitudeRef' in tags:
                 lon = tags['GPS GPSLongitude'].values
                 lon_ref = str(tags['GPS GPSLongitudeRef'])
                 lon_decimal = get_decimal_from_dms(
                     [float(x.num)/float(x.den) for x in lon], lon_ref)
-                exif_data['location_info']['longitude'] = str(lon_decimal)
-            except Exception as e:
-                print(f"[WARNING] Failed to parse GPS longitude: {e}")
+
+                if lon_decimal is not None:
+                    exif_data['location_info']['longitude'] = f"{lon_decimal:.6f}"
+
+            if 'GPS GPSAltitude' in tags:
+                try:
+                    alt_str = str(tags['GPS GPSAltitude'])
+                    if '/' in alt_str:
+                        num, den = alt_str.split('/')
+                        altitude = float(num) / float(den)
+                    else:
+                        altitude = float(alt_str)
+                    exif_data['location_info']['altitude'] = f"{altitude:.1f}m"
+                except Exception:
+                    pass
+
+        except Exception:
+            pass
 
         return exif_data
 
-    except Exception as e:
-        print(f"[ERROR] exifread extraction failed: {e}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
         return {
             'shooting_params': {},
             'photo_properties': {},
@@ -174,7 +187,6 @@ def extract_exif_data(image_file):
         image_file.seek(0)
 
         # Try exifread first (more reliable for some cameras)
-        print("[INFO] Attempting EXIF extraction with exifread...")
         exifread_data = extract_exif_with_exifread(image_file)
 
         # Merge exifread results
@@ -192,78 +204,48 @@ def extract_exif_data(image_file):
         exif_data['location_info'].update(
             exifread_data.get('location_info', {}))
 
-        # Fallback to PIL if exifread didn't get everything
-        image_file.seek(0)
-        image = Image.open(image_file)
+        # Fallback to PIL for GPS if not found
+        if not exif_data['location_info'] or not exif_data['location_info'].get('latitude'):
+            image_file.seek(0)
+            image = Image.open(image_file)
 
-        # Get EXIF info - try multiple methods
-        exif = None
-
-        # Method 1: Standard getexif()
-        try:
-            exif = image.getexif()
-        except:
-            pass
-
-        # Method 2: _getexif() for older format
-        if not exif or len(exif) == 0:
             try:
-                exif = image._getexif()
-            except:
+                exif = image.getexif()
+                if exif:
+                    gps_ifd = exif.get_ifd(0x8825)
+
+                    if gps_ifd:
+                        # Latitude
+                        if 2 in gps_ifd and 1 in gps_ifd:
+                            lat = gps_ifd[2]
+                            lat_ref = gps_ifd[1]
+                            lat_decimal = get_decimal_from_dms(lat, lat_ref)
+                            if lat_decimal is not None:
+                                exif_data['location_info']['latitude'] = f"{lat_decimal:.6f}"
+
+                        # Longitude
+                        if 4 in gps_ifd and 3 in gps_ifd:
+                            lon = gps_ifd[4]
+                            lon_ref = gps_ifd[3]
+                            lon_decimal = get_decimal_from_dms(lon, lon_ref)
+                            if lon_decimal is not None:
+                                exif_data['location_info']['longitude'] = f"{lon_decimal:.6f}"
+
+                        # Altitude
+                        if 6 in gps_ifd:
+                            alt = gps_ifd[6]
+                            if isinstance(alt, tuple):
+                                altitude = alt[0] / \
+                                    alt[1] if alt[1] != 0 else alt[0]
+                            else:
+                                altitude = float(alt)
+                            exif_data['location_info']['altitude'] = f"{altitude:.1f}m"
+            except Exception:
                 pass
-
-        if exif and len(exif) > 0:
-            print(f"[INFO] PIL found {len(exif)} EXIF tags")
-
-            # Process EXIF tags (only if not already found by exifread)
-            for tag_id, value in exif.items():
-                try:
-                    tag = TAGS.get(tag_id, tag_id)
-
-                    # Only process if not already extracted
-                    if tag in ['DateTimeOriginal', 'DateTime', 'DateTimeDigitized'] and 'taken_at' not in exif_data:
-                        try:
-                            if isinstance(value, bytes):
-                                value = value.decode('utf-8', errors='ignore')
-                            exif_data['taken_at'] = datetime.strptime(
-                                str(value), '%Y:%m:%d %H:%M:%S'
-                            )
-                        except:
-                            pass
-
-                    elif tag == 'Make' and 'camera_make' not in exif_data:
-                        if isinstance(value, bytes):
-                            value = value.decode('utf-8', errors='ignore')
-                        exif_data['camera_make'] = str(value).strip()
-
-                    elif tag == 'Model' and 'camera_model' not in exif_data:
-                        if isinstance(value, bytes):
-                            value = value.decode('utf-8', errors='ignore')
-                        exif_data['camera_model'] = str(value).strip()
-
-                    elif tag == 'LensModel' and 'lens_model' not in exif_data:
-                        if isinstance(value, bytes):
-                            value = value.decode('utf-8', errors='ignore')
-                        exif_data['lens_model'] = str(value).strip()
-
-                except:
-                    continue
-
-        # Summary
-        print(f"[INFO] EXIF extraction complete:")
-        print(
-            f"  - Camera: {exif_data.get('camera_make', 'N/A')} {exif_data.get('camera_model', 'N/A')}")
-        print(f"  - Lens: {exif_data.get('lens_model', 'N/A')}")
-        print(f"  - Shooting params: {exif_data['shooting_params']}")
-        print(f"  - Photo properties: {exif_data['photo_properties']}")
-        print(f"  - Location: {exif_data['location_info']}")
 
         return exif_data
 
-    except Exception as e:
-        print(f"[ERROR] Error extracting EXIF data: {e}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
         return {
             'shooting_params': {},
             'photo_properties': {},
@@ -292,6 +274,5 @@ def create_thumbnail(image_file, max_size=(800, 800)):
 
         return thumb_io
 
-    except Exception as e:
-        print(f"[ERROR] Error creating thumbnail: {e}")
+    except Exception:
         return None

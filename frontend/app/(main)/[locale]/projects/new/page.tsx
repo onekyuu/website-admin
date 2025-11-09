@@ -29,6 +29,7 @@ const ProjectCreatePage = () => {
     images: [],
     skill_ids: [],
     is_featured: false,
+    need_ai_generate: false,
     translations: {
       [locale]: {
         title: "",
@@ -52,6 +53,7 @@ const ProjectCreatePage = () => {
       images: data.images,
       skill_ids: data.skill_ids || [],
       is_featured: data.is_featured || false,
+      need_ai_generate: data.need_ai_generate || false,
     }));
   };
 
@@ -124,6 +126,7 @@ const ProjectCreatePage = () => {
                   project.translations[option.value]?.description || "",
                 is_featured: project.is_featured || false,
                 info: project.translations[option.value]?.info || [],
+                need_ai_generate: project.need_ai_generate || false,
               }}
               onChange={(data) => handleChange(data, option.value)}
             />
