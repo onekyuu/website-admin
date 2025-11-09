@@ -8,6 +8,7 @@ from api.gallery.utils import extract_exif_data, create_thumbnail
 from api.core.permissions import IsAdminOrReadOnly
 from api.core.pagination import CustomPageNumberPagination
 from api.oss.utils import upload_file_to_oss, delete_file_from_oss
+import shortuuid
 
 
 class GalleryListView(generics.ListAPIView):
@@ -56,7 +57,11 @@ class GalleryCreateView(generics.CreateAPIView):
                     thumbnail, directory='uploads/gallery/thumbnails')
                 thumbnail_url = thumbnail_result['url']
 
+            # 生成唯一 slug
+            slug = f"photo-{shortuuid.uuid()[:8]}"
+
             gallery = Gallery.objects.create(
+                slug=slug,
                 title=serializer.validated_data.get('title', ''),
                 description=serializer.validated_data.get('description', ''),
                 category=serializer.validated_data.get('category', ''),
@@ -93,7 +98,7 @@ class GalleryCreateView(generics.CreateAPIView):
 class GalleryDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = GallerySerializer
     queryset = Gallery.objects.all()
-    lookup_field = 'id'
+    lookup_field = 'slug'  # 改为通过 slug 查询
 
     def get_permissions(self):
         if self.request.method == 'GET':

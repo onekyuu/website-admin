@@ -25,6 +25,7 @@ import {
   Calendar,
   Camera,
   Eye,
+  FilePenLine,
   MapPin,
   ScanEye,
   Trash2,
@@ -46,19 +47,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import { useRouter } from "@/i18n/navigations";
 
 const GalleryCard: FC<{ gallery: Gallery }> = ({ gallery }) => {
   const userPermissions = useAuthStore(
     (state) => state.allUserData,
   )?.permissions;
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await del(`/gallery/detail/${id}/`);
-
+    mutationFn: async (slug: string) => {
+      const response = await del(`/gallery/detail/${slug}/`);
       return response;
     },
     onSuccess: () => {
@@ -77,7 +79,7 @@ const GalleryCard: FC<{ gallery: Gallery }> = ({ gallery }) => {
   };
 
   const confirmDelete = () => {
-    deleteMutation.mutate(gallery.id);
+    deleteMutation.mutate(gallery.slug);
   };
 
   return (
@@ -90,6 +92,12 @@ const GalleryCard: FC<{ gallery: Gallery }> = ({ gallery }) => {
             <ButtonGroup>
               <Button onClick={() => setOpen(true)} className="cursor-pointer">
                 <ScanEye />
+              </Button>
+              <Button
+                onClick={() => router.push(`/gallery/${gallery.slug}/edit`)}
+                className="cursor-pointer"
+              >
+                <FilePenLine />
               </Button>
               <Button
                 variant="destructive"
@@ -156,12 +164,11 @@ const GalleryCard: FC<{ gallery: Gallery }> = ({ gallery }) => {
           <div className="flex-1 bg-black/95 flex items-center justify-center overflow-hidden min-h-0">
             <div className="relative w-full h-full">
               <Image
-                src={gallery.image_url}
+                src={gallery.thumbnail_url}
                 alt={gallery.title || "Gallery image"}
                 fill
                 className="object-contain"
                 sizes="100vw"
-                unoptimized
                 priority
               />
             </div>

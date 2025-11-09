@@ -13,6 +13,8 @@ class Project(models.Model):
         'ProjectSkill', related_name='projects', blank=True)
     images = models.JSONField(default=list, blank=True)
     is_featured = models.BooleanField(default=False)
+    need_ai_generate = models.BooleanField(
+        default=True)
 
     class Meta:
         db_table = 'api_project'

@@ -1,67 +1,39 @@
 from django.db import models
 from api.models import User
+import shortuuid
 
 
 class Gallery(models.Model):
-    # Basic information
-    title = models.CharField(max_length=200, blank=True, verbose_name="Title")
-    description = models.TextField(blank=True, verbose_name="Description")
-    image_url = models.URLField(max_length=500, verbose_name="Image URL")
-    thumbnail_url = models.URLField(
-        max_length=500, blank=True, verbose_name="Thumbnail URL")
+    # 改回 unique=True，移除 null=True
+    slug = models.SlugField(unique=True, max_length=255, default='')
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    image_url = models.URLField(max_length=500)
+    thumbnail_url = models.URLField(max_length=500)
 
-    # EXIF Information
-    taken_at = models.DateTimeField(
-        null=True, blank=True, verbose_name="Taken At")
-    camera_make = models.CharField(
-        max_length=100, blank=True, verbose_name="Camera Make")
-    camera_model = models.CharField(
-        max_length=100, blank=True, verbose_name="Camera Model")
-    lens_model = models.CharField(
-        max_length=100, blank=True, verbose_name="Lens Model")
+    # EXIF data
+    taken_at = models.DateTimeField(null=True, blank=True)
+    camera_make = models.CharField(max_length=100, blank=True)
+    camera_model = models.CharField(max_length=100, blank=True)
+    lens_model = models.CharField(max_length=100, blank=True)
 
-    # Shooting parameters (stored as JSON object)
-    shooting_params = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Shooting Parameters",
-        help_text="Contains focal_length, aperture, shutter_speed, iso"
-    )
+    shooting_params = models.JSONField(default=dict, blank=True)
+    photo_properties = models.JSONField(default=dict, blank=True)
+    location_info = models.JSONField(default=dict, blank=True)
 
-    # Photo properties (stored as JSON object)
-    photo_properties = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Photo Properties",
-        help_text="Contains width, height, file_size"
-    )
+    # Metadata
+    category = models.CharField(max_length=50, blank=True)
+    tags = models.JSONField(default=list, blank=True)
 
-    # Location information (stored as JSON object)
-    location_info = models.JSONField(
-        default=dict,
-        blank=True,
-        verbose_name="Location Information",
-        help_text="Contains latitude, longitude, location"
-    )
+    # Status
+    is_featured = models.BooleanField(default=False)
+    is_published = models.BooleanField(default=True)
+    view_count = models.IntegerField(default=0)
 
-    # Classification and display
-    category = models.CharField(
-        max_length=50, blank=True, verbose_name="Category")
-    tags = models.JSONField(default=list, blank=True, verbose_name="Tags")
-    is_featured = models.BooleanField(default=False, verbose_name="Featured")
-    is_published = models.BooleanField(default=True, verbose_name="Published")
-    view_count = models.IntegerField(default=0, verbose_name="View Count")
-
-    # System fields
-    uploaded_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='gallery_photos',
-        verbose_name="Uploaded By"
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name="Created At")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
+    # User and timestamps
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Photo"
@@ -75,6 +47,15 @@ class Gallery(models.Model):
 
     def __str__(self):
         return self.title or f"Photo {self.id}"
+
+    def save(self, *args, **kwargs):
+        # 如果 slug 为空，自动生成
+        if not self.slug:
+            self.slug = f"photo-{shortuuid.uuid()[:8]}"
+            # 确保 slug 唯一
+            while Gallery.objects.filter(slug=self.slug).exists():
+                self.slug = f"photo-{shortuuid.uuid()[:8]}"
+        super().save(*args, **kwargs)
 
     def get_exif_summary(self):
         """Get EXIF information summary"""

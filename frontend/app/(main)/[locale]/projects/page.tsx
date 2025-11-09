@@ -28,8 +28,6 @@ const ProjectPage = () => {
     queryFn: () => get<Project[]>(`/projects/list/`),
   });
 
-  console.log("projects", projects);
-
   const handleCreateProject = async (data: {
     title: string;
     image?: string;

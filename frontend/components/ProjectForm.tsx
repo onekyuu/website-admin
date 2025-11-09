@@ -21,7 +21,6 @@ import { MultiSelectCheckbox, Option } from "./ui/multi-select-checkbox";
 import MarkdownEditor from "./MarkdownEditor";
 import { NewProjectData } from "@/app/(main)/[locale]/projects/types";
 import { Switch } from "./ui/switch";
-import { info } from "console";
 import { useAuthStore } from "@/lib/stores/auth";
 
 interface ProjectFormProps {
@@ -56,6 +55,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
     skill_ids: z.array(z.number()),
     is_featured: z.boolean(),
     info: z.array(z.string()).max(4, t("infoMaxLength")),
+    need_ai_generate: z.boolean(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -67,6 +67,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
       skill_ids: initialData?.skill_ids || [],
       is_featured: initialData?.is_featured || false,
       info: initialData?.info || [],
+      need_ai_generate: initialData?.need_ai_generate || false,
     },
   });
 
@@ -197,6 +198,22 @@ const ProjectForm: FC<ProjectFormProps> = ({
             render={({ field }) => (
               <FormItem className="flex items-center space-x-3 space-y-0">
                 <FormLabel className="mb-0">{t("isFeatured")}</FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="need_ai_generate"
+            render={({ field }) => (
+              <FormItem className="flex items-center space-x-3 space-y-0">
+                <FormLabel className="mb-0">{t("needAiGenerate")}</FormLabel>
                 <FormControl>
                   <Switch
                     checked={field.value}

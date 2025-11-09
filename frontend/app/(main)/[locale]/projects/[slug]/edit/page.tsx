@@ -4,8 +4,6 @@ import { get, patch } from "@/lib/fetcher";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import React, { useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
-import PostForm from "@/components/PostForm";
-import useUserData from "@/hooks/useUserData";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -95,10 +93,10 @@ const ProjectEditPage = () => {
       },
       images: data.images,
       skill_ids: data.skill_ids || [],
+      need_ai_generate: data.need_ai_generate || false,
+      is_featured: data.is_featured || false,
     }));
   };
-
-  console.log("newProject:", newProject);
 
   const initialValues = useCallback(
     (lang: LanguageCode) => {
@@ -110,6 +108,8 @@ const ProjectEditPage = () => {
         description: projectData.translations[lang]?.description || "",
         skill_ids: projectData.skills.map((skill) => skill.id) || [],
         info: projectData.translations[lang]?.info || [],
+        need_ai_generate: projectData.need_ai_generate || false,
+        is_featured: projectData.is_featured || false,
       };
     },
     [projectData],
