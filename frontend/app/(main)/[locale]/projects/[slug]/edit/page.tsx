@@ -39,7 +39,7 @@ const ProjectEditPage = () => {
     queryFn: () => get<Project>(`/projects/detail/${slug}/`),
   });
 
-  const { data: skills, refetch } = useQuery({
+  const { data: skills } = useQuery({
     queryKey: ["skills"],
     queryFn: () => get<Skill[]>(`/projects/skill/list/`),
   });
@@ -81,44 +81,52 @@ const ProjectEditPage = () => {
     data: ProjectFormInitialData,
     language: LanguageCode,
   ) => {
-    setNewProject((prev) => ({
-      ...prev,
-      translations: {
-        ...prev?.translations,
-        [language]: {
-          title: data.title || "",
-          description: data.description || "",
-          info: data.info || [],
-        },
-      },
-      images: data.images,
-      skill_ids: data.skill_ids || [],
-      need_ai_generate: data.need_ai_generate || false,
-      is_featured: data.is_featured || false,
-    }));
+    setNewProject((draft) => {
+      if (!draft) return;
+
+      if (!draft.translations) {
+        draft.translations = {};
+      }
+      draft.translations[language] = {
+        title: data.title || "",
+        description: data.description || "",
+        info: data.info || [],
+      };
+
+      draft.images = data.images;
+      draft.skill_ids = data.skill_ids || [];
+      draft.need_ai_generate = data.need_ai_generate || false;
+      draft.is_featured = data.is_featured || false;
+    });
   };
 
   const initialValues = useCallback(
-    (lang: LanguageCode) => {
-      if (!projectData) return undefined;
+    (lang: LanguageCode): ProjectFormInitialData | undefined => {
+      if (!newProject) return undefined;
+
       return {
-        images: projectData?.images || [],
-        skills: projectData?.skills || [],
-        title: projectData.translations[lang]?.title || "",
-        description: projectData.translations[lang]?.description || "",
-        skill_ids: projectData.skills.map((skill) => skill.id) || [],
-        info: projectData.translations[lang]?.info || [],
-        need_ai_generate: projectData.need_ai_generate || false,
-        is_featured: projectData.is_featured || false,
+        images: newProject.images || [],
+        title: newProject.translations?.[lang]?.title || "",
+        description: newProject.translations?.[lang]?.description || "",
+        skill_ids: newProject.skill_ids || [],
+        info: newProject.translations?.[lang]?.info || [],
+        need_ai_generate: newProject.need_ai_generate || false,
+        is_featured: newProject.is_featured || false,
       };
     },
-    [projectData],
+    [newProject, projectData],
   );
 
   useEffect(() => {
     if (projectData) {
       setNewProject({
-        ...projectData,
+        id: projectData.id,
+        slug: projectData.slug,
+        translations: projectData.translations,
+        images: projectData.images,
+        skill_ids: projectData.skills.map((skill) => skill.id),
+        need_ai_generate: projectData.need_ai_generate || false,
+        is_featured: projectData.is_featured || false,
       });
     }
   }, [projectData, setNewProject]);
@@ -150,6 +158,7 @@ const ProjectEditPage = () => {
           {languageOptions.map((option) => (
             <TabsContent key={option.value} value={option.value}>
               <ProjectForm
+                key={`${option.value}-${newProject.slug}`}
                 mode="edit"
                 initialData={initialValues(option.value)}
                 onChange={(data) => handleChange(data, option.value)}

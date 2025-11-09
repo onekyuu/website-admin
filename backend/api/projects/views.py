@@ -31,69 +31,81 @@ class ProjectCreateApiView(generics.CreateAPIView):
         # 检查是否需要 AI 翻译
         need_ai_generate = request.data.get('need_ai_generate', True)
 
-        # 按优先级查找源语言：中文 > 日语 > 英语
-        supported_languages = ['zh', 'ja', 'en']
+        if need_ai_generate:
+            # AI 翻译模式：按优先级查找源语言
+            supported_languages = ['zh', 'ja', 'en']
 
-        source_lang = None
-        source_translation = None
-        for lang in supported_languages:
-            if lang in translations_data and translations_data[lang].get('title'):
-                source_lang = lang
-                source_translation = translations_data[lang]
-                break
+            source_lang = None
+            source_translation = None
+            for lang in supported_languages:
+                if lang in translations_data and translations_data[lang].get('title'):
+                    source_lang = lang
+                    source_translation = translations_data[lang]
+                    break
 
-        if not source_lang:
-            return Response(
-                {"error": "At least one translation must be provided"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 创建所有语言的翻译
-        all_languages = ['zh', 'en', 'ja']
-        for target_lang in all_languages:
-            if target_lang == source_lang:
-                # 源语言直接保存
-                ProjectTranslation.objects.create(
-                    project=project,
-                    language=target_lang,
-                    title=source_translation.get('title', ''),
-                    description=source_translation.get('description', ''),
-                    info=source_translation.get('info', []),
-                )
-            elif need_ai_generate:
-                # 需要 AI 翻译时才翻译其他语言
-                translated_title = translate_text(
-                    source_translation.get('title', ''),
-                    source_lang,
-                    target_lang
+            if not source_lang:
+                return Response(
+                    {"error": "At least one translation must be provided"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
-                translated_description = ''
-                if source_translation.get('description'):
-                    translated_description = translate_text(
-                        source_translation['description'],
+            # 创建所有语言的翻译
+            all_languages = ['zh', 'en', 'ja']
+            for target_lang in all_languages:
+                if target_lang == source_lang:
+                    # 源语言直接保存
+                    ProjectTranslation.objects.create(
+                        project=project,
+                        language=target_lang,
+                        title=source_translation.get('title', ''),
+                        description=source_translation.get('description', ''),
+                        info=source_translation.get('info', []),
+                    )
+                else:
+                    # 翻译其他语言
+                    translated_title = translate_text(
+                        source_translation.get('title', ''),
                         source_lang,
                         target_lang
                     )
 
-                translated_info = []
-                source_info = source_translation.get('info', [])
-                for info_item in source_info:
-                    if info_item:
-                        translated_item = translate_text(
-                            info_item,
+                    translated_description = ''
+                    if source_translation.get('description'):
+                        translated_description = translate_text(
+                            source_translation['description'],
                             source_lang,
                             target_lang
                         )
-                        translated_info.append(translated_item)
 
-                ProjectTranslation.objects.create(
-                    project=project,
-                    language=target_lang,
-                    title=translated_title,
-                    description=translated_description,
-                    info=translated_info
-                )
+                    translated_info = []
+                    source_info = source_translation.get('info', [])
+                    for info_item in source_info:
+                        if info_item:
+                            translated_item = translate_text(
+                                info_item,
+                                source_lang,
+                                target_lang
+                            )
+                            translated_info.append(translated_item)
+
+                    ProjectTranslation.objects.create(
+                        project=project,
+                        language=target_lang,
+                        title=translated_title,
+                        description=translated_description,
+                        info=translated_info
+                    )
+        else:
+            # 手动模式：直接保存所有提供的语言内容
+            for lang, translation_data in translations_data.items():
+                if lang in ['zh', 'en', 'ja'] and translation_data.get('title'):
+                    ProjectTranslation.objects.create(
+                        project=project,
+                        language=lang,
+                        title=translation_data.get('title', ''),
+                        description=translation_data.get('description', ''),
+                        info=translation_data.get('info', []),
+                    )
 
         response_serializer = self.get_serializer(project)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -159,74 +171,89 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             return Response(response_serializer.data)
 
         # 检查是否需要 AI 翻译
-        need_ai_generate = request.data.get('need_ai_generate', project.need_ai_generate)
+        need_ai_generate = request.data.get(
+            'need_ai_generate', project.need_ai_generate)
 
-        # 按优先级查找源语言：中文 > 日语 > 英语
-        supported_languages = ['zh', 'ja', 'en']
+        if need_ai_generate:
+            # AI 翻译模式：按优先级查找源语言
+            supported_languages = ['zh', 'ja', 'en']
 
-        source_lang = None
-        source_translation = None
-        for lang in supported_languages:
-            if lang in translations_data and translations_data[lang].get('title'):
-                source_lang = lang
-                source_translation = translations_data[lang]
-                break
+            source_lang = None
+            source_translation = None
+            for lang in supported_languages:
+                if lang in translations_data and translations_data[lang].get('title'):
+                    source_lang = lang
+                    source_translation = translations_data[lang]
+                    break
 
-        # 如果没有提供任何翻译，不做任何更新
-        if not source_lang:
-            response_serializer = self.get_serializer(project)
-            return Response(response_serializer.data)
+            # 如果没有提供任何翻译，不做任何更新
+            if not source_lang:
+                response_serializer = self.get_serializer(project)
+                return Response(response_serializer.data)
 
-        # 更新所有语言的翻译
-        all_languages = ['zh', 'en', 'ja']
-        for target_lang in all_languages:
-            if target_lang == source_lang:
-                # 源语言直接保存
-                ProjectTranslation.objects.update_or_create(
-                    project=project,
-                    language=target_lang,
-                    defaults={
-                        'title': source_translation.get('title', ''),
-                        'description': source_translation.get('description', ''),
-                        'info': source_translation.get('info', []),
-                    }
-                )
-            elif need_ai_generate:
-                # 需要 AI 翻译时才翻译其他语言
-                translated_title = translate_text(
-                    source_translation.get('title', ''),
-                    source_lang,
-                    target_lang
-                )
-
-                translated_description = ''
-                if source_translation.get('description'):
-                    translated_description = translate_text(
-                        source_translation['description'],
+            # 更新所有语言的翻译
+            all_languages = ['zh', 'en', 'ja']
+            for target_lang in all_languages:
+                if target_lang == source_lang:
+                    # 源语言直接保存
+                    ProjectTranslation.objects.update_or_create(
+                        project=project,
+                        language=target_lang,
+                        defaults={
+                            'title': source_translation.get('title', ''),
+                            'description': source_translation.get('description', ''),
+                            'info': source_translation.get('info', []),
+                        }
+                    )
+                else:
+                    # 翻译其他语言
+                    translated_title = translate_text(
+                        source_translation.get('title', ''),
                         source_lang,
                         target_lang
                     )
 
-                translated_info = []
-                source_info = source_translation.get('info', [])
-                for info_item in source_info:
-                    if info_item:
-                        translated_item = translate_text(
-                            info_item,
+                    translated_description = ''
+                    if source_translation.get('description'):
+                        translated_description = translate_text(
+                            source_translation['description'],
                             source_lang,
                             target_lang
                         )
-                        translated_info.append(translated_item)
 
-                ProjectTranslation.objects.update_or_create(
-                    project=project,
-                    language=target_lang,
-                    defaults={
-                        'title': translated_title,
-                        'description': translated_description,
-                        'info': translated_info,
-                    }
-                )
+                    translated_info = []
+                    source_info = source_translation.get('info', [])
+                    for info_item in source_info:
+                        if info_item:
+                            translated_item = translate_text(
+                                info_item,
+                                source_lang,
+                                target_lang
+                            )
+                            translated_info.append(translated_item)
+
+                    ProjectTranslation.objects.update_or_create(
+                        project=project,
+                        language=target_lang,
+                        defaults={
+                            'title': translated_title,
+                            'description': translated_description,
+                            'info': translated_info,
+                        }
+                    )
+        else:
+            # 手动模式：直接保存所有提供的语言内容
+            for lang, translation_data in translations_data.items():
+                if lang in ['zh', 'en', 'ja'] and translation_data.get('title'):
+                    ProjectTranslation.objects.update_or_create(
+                        project=project,
+                        language=lang,
+                        defaults={
+                            'title': translation_data.get('title', ''),
+                            'description': translation_data.get('description', ''),
+                            'info': translation_data.get('info', []),
+                        }
+                    )
 
         response_serializer = self.get_serializer(project)
         return Response(response_serializer.data)
