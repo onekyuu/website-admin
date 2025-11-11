@@ -75,6 +75,10 @@ class ProjectSerializer(serializers.ModelSerializer):
         default=list
     )
     need_ai_generate = serializers.BooleanField(required=False)
+    github_url = serializers.URLField(
+        required=False, allow_blank=True, allow_null=True)
+    live_demo_url = serializers.URLField(
+        required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Project

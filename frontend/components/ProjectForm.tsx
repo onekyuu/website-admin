@@ -48,6 +48,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
     value: skill.id.toString(),
     label: skill.name,
   }));
+  const infoMaxItems = 4;
 
   const formSchema = z.object({
     title: z.string({
@@ -177,9 +178,16 @@ const ProjectForm: FC<ProjectFormProps> = ({
       z.infer<typeof formSchema>,
       "info" | "challenges" | "what_i_did"
     >,
+    maxItems?: number,
   ) => {
-    if (field.value && field.value.length < 4) {
-      field.onChange([...field.value, ""]);
+    if (maxItems) {
+      if (field.value && field.value.length < maxItems) {
+        field.onChange([...field.value, ""]);
+      }
+    } else {
+      if (field.value) {
+        field.onChange([...field.value, ""]);
+      }
     }
   };
 
@@ -207,54 +215,6 @@ const ProjectForm: FC<ProjectFormProps> = ({
     updatedInfo[index] = value;
     field.onChange(updatedInfo);
   };
-
-  // const handleAddChallenges = (
-  //   field: ControllerRenderProps<z.infer<typeof formSchema>, "challenges">
-  // ) => {
-  //   field.onChange([...(field.value || []), ""]);
-  // };
-
-  // const handleRemoveChallenges = (
-  //   field: ControllerRenderProps<z.infer<typeof formSchema>, "challenges">,
-  //   index: number
-  // ) => {
-  //   const updatedChallenges = (field.value || []).filter((_, i) => i !== index);
-  //   field.onChange(updatedChallenges);
-  // };
-
-  // const handleChangeChallenges = (
-  //   field: ControllerRenderProps<z.infer<typeof formSchema>, "challenges">,
-  //   index: number,
-  //   value: string
-  // ) => {
-  //   const updatedChallenges = [...(field.value || [])];
-  //   updatedChallenges[index] = value;
-  //   field.onChange(updatedChallenges);
-  // };
-
-  // const handleAddWhatIDid = (
-  //   field: ControllerRenderProps<z.infer<typeof formSchema>, "what_i_did">
-  // ) => {
-  //   field.onChange([...(field.value || []), ""]);
-  // };
-
-  // const handleRemoveWhatIDid = (
-  //   field: ControllerRenderProps<z.infer<typeof formSchema>, "what_i_did">,
-  //   index: number
-  // ) => {
-  //   const updatedWhatIDid = (field.value || []).filter((_, i) => i !== index);
-  //   field.onChange(updatedWhatIDid);
-  // };
-
-  // const handleChangeWhatIDid = (
-  //   field: ControllerRenderProps<z.infer<typeof formSchema>, "what_i_did">,
-  //   index: number,
-  //   value: string
-  // ) => {
-  //   const updatedWhatIDid = [...(field.value || [])];
-  //   updatedWhatIDid[index] = value;
-  //   field.onChange(updatedWhatIDid);
-  // };
 
   useEffect(() => {
     const subscription = form.watch((values) => {
@@ -392,11 +352,12 @@ const ProjectForm: FC<ProjectFormProps> = ({
                     field={field}
                     placeholder={t("infoPlaceholder")}
                     addText={t("addInfo")}
-                    onAdd={() => handleAddInputItem(field)}
+                    onAdd={(maxItems) => handleAddInputItem(field, maxItems)}
                     onChange={(index, value) =>
                       handleChangeInputItem(field, index, value)
                     }
                     onRemove={(index) => handleRemoveInputItem(field, index)}
+                    maxItems={infoMaxItems}
                   />
                 </FormControl>
                 <FormMessage />
