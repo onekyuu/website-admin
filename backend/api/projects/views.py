@@ -28,11 +28,9 @@ class ProjectCreateApiView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         project = serializer.save(created_by=request.user)
 
-        # 检查是否需要 AI 翻译
         need_ai_generate = request.data.get('need_ai_generate', True)
 
         if need_ai_generate:
-            # AI 翻译模式：按优先级查找源语言
             supported_languages = ['zh', 'ja', 'en']
 
             source_lang = None
@@ -49,11 +47,9 @@ class ProjectCreateApiView(generics.CreateAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # 创建所有语言的翻译
             all_languages = ['zh', 'en', 'ja']
             for target_lang in all_languages:
                 if target_lang == source_lang:
-                    # 源语言直接保存
                     ProjectTranslation.objects.create(
                         project=project,
                         language=target_lang,
@@ -72,7 +68,6 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         extra_info=source_translation.get('extra_info', {}),
                     )
                 else:
-                    # 翻译其他语言
                     translated_title = translate_text(
                         source_translation.get('title', ''),
                         source_lang,
@@ -119,7 +114,6 @@ class ProjectCreateApiView(generics.CreateAPIView):
                             target_lang
                         )
 
-                    # 翻译列表字段
                     translated_info = []
                     for item in source_translation.get('info', []):
                         if item:
@@ -136,12 +130,22 @@ class ProjectCreateApiView(generics.CreateAPIView):
 
                     translated_what_i_did = []
                     for item in source_translation.get('what_i_did', []):
-                        if item:
-                            translated_what_i_did.append(
-                                translate_text(item, source_lang, target_lang)
-                            )
+                        if item and isinstance(item, dict):
+                            translated_item = {
+                                'title': translate_text(
+                                    item.get('title', ''),
+                                    source_lang,
+                                    target_lang
+                                ),
+                                'description': translate_text(
+                                    item.get('description', ''),
+                                    source_lang,
+                                    target_lang
+                                ),
+                                'icon': item.get('icon', '')  # icon 不翻译
+                            }
+                            translated_what_i_did.append(translated_item)
 
-                    # subtitle 特殊处理
                     translated_subtitle = {}
                     if source_translation.get('subtitle'):
                         subtitle = source_translation['subtitle']
@@ -166,7 +170,6 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         extra_info=source_translation.get('extra_info', {}),
                     )
         else:
-            # 手动模式：直接保存所有提供的语言内容
             for lang, translation_data in translations_data.items():
                 if lang in ['zh', 'en', 'ja'] and translation_data.get('title'):
                     ProjectTranslation.objects.create(
@@ -197,13 +200,11 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_url_kwarg = 'project_slug'
 
     def get_permissions(self):
-        """GET 请求允许所有人访问，其他操作需要认证"""
         if self.request.method == 'GET':
             return [AllowAny()]
         return [IsAuthenticated(), IsAdminOrReadOnly()]
 
     def _has_translation_updates(self, translations_data, project):
-        """检查是否有翻译内容的更新"""
         if not translations_data:
             return False
 
@@ -221,7 +222,6 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             if not existing:
                 return True
 
-            # 检查是否有内容变化
             if (translation_data.get('title', '') != existing.title or
                 translation_data.get('subtitle', {}) != existing.subtitle or
                 translation_data.get('description', '') != existing.description or
@@ -242,24 +242,19 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
 
-        # 更新项目基本信息（images, skill_ids, is_featured 等）
         serializer = self.get_serializer(
             instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         project = serializer.save()
 
-        # 检查是否有翻译内容的更新
         if not self._has_translation_updates(translations_data, project):
-            # 没有翻译更新，直接返回
             response_serializer = self.get_serializer(project)
             return Response(response_serializer.data)
 
-        # 检查是否需要 AI 翻译
         need_ai_generate = request.data.get(
             'need_ai_generate', project.need_ai_generate)
 
         if need_ai_generate:
-            # AI 翻译模式：按优先级查找源语言
             supported_languages = ['zh', 'ja', 'en']
 
             source_lang = None
@@ -270,16 +265,13 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                     source_translation = translations_data[lang]
                     break
 
-            # 如果没有提供任何翻译，不做任何更新
             if not source_lang:
                 response_serializer = self.get_serializer(project)
                 return Response(response_serializer.data)
 
-            # 更新所有语言的翻译
             all_languages = ['zh', 'en', 'ja']
             for target_lang in all_languages:
                 if target_lang == source_lang:
-                    # 源语言直接保存
                     ProjectTranslation.objects.update_or_create(
                         project=project,
                         language=target_lang,
@@ -298,7 +290,6 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                         }
                     )
                 else:
-                    # 翻译其他语言
                     translated_title = translate_text(
                         source_translation.get('title', ''),
                         source_lang,
@@ -345,7 +336,6 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                             target_lang
                         )
 
-                    # 翻译列表字段
                     translated_info = []
                     for item in source_translation.get('info', []):
                         if item:
@@ -362,12 +352,22 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
                     translated_what_i_did = []
                     for item in source_translation.get('what_i_did', []):
-                        if item:
-                            translated_what_i_did.append(
-                                translate_text(item, source_lang, target_lang)
-                            )
+                        if item and isinstance(item, dict):
+                            translated_item = {
+                                'title': translate_text(
+                                    item.get('title', ''),
+                                    source_lang,
+                                    target_lang
+                                ),
+                                'description': translate_text(
+                                    item.get('description', ''),
+                                    source_lang,
+                                    target_lang
+                                ),
+                                'icon': item.get('icon', '')
+                            }
+                            translated_what_i_did.append(translated_item)
 
-                    # subtitle 特殊处理
                     translated_subtitle = {}
                     if source_translation.get('subtitle'):
                         subtitle = source_translation['subtitle']
@@ -394,7 +394,6 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                         }
                     )
         else:
-            # 手动模式：直接保存所有提供的语言内容
             for lang, translation_data in translations_data.items():
                 if lang in ['zh', 'en', 'ja'] and translation_data.get('title'):
                     ProjectTranslation.objects.update_or_create(

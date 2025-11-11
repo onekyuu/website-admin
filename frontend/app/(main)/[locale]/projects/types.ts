@@ -1,6 +1,12 @@
 import { LanguageCode } from "../posts/types";
 import { Skill } from "./skills/types";
 
+export interface WhatIDidItem {
+  title: string;
+  description: string;
+  icon: string;
+}
+
 export interface ProjectBase {
   id: number;
   slug: string;
@@ -29,7 +35,7 @@ export interface ProjectTranslationData {
   introduction?: string;
   challenges?: string[];
   solutions?: string;
-  what_i_did?: string[];
+  what_i_did?: WhatIDidItem[];
   extra_info?: Record<string, string | string[] | Record<string, string>>;
 }
 
@@ -66,7 +72,7 @@ export interface NewProjectData {
   introduction?: string;
   challenges?: string[];
   solutions?: string;
-  what_i_did?: string[];
+  what_i_did?: WhatIDidItem[];
   extra_info?: Record<string, string | string[] | Record<string, string>>;
   images?: string[];
   detail_images?: string[];
