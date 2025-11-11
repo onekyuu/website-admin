@@ -73,6 +73,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
       .optional(),
     github_url: z.string().url().optional(),
     live_demo_url: z.string().url().optional(),
+    involved_areas: z.string().optional(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -96,6 +97,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
       extra_info: initialData?.extra_info || {},
       github_url: initialData?.github_url || "",
       live_demo_url: initialData?.live_demo_url || "",
+      involved_areas: initialData?.involved_areas || "",
     },
   });
 
@@ -379,6 +381,21 @@ const ProjectForm: FC<ProjectFormProps> = ({
                   />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="involved_areas"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("involvedAreas")}</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder={t("involvedAreasPlaceholder")}
+                  />
+                </FormControl>
               </FormItem>
             )}
           />

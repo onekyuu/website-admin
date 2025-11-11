@@ -18,6 +18,7 @@ class Project(models.Model):
         default=True)
     github_url = models.URLField(max_length=500, null=True, blank=True)
     live_demo_url = models.URLField(max_length=500, null=True, blank=True)
+    involved_areas = models.CharField(max_length=500, blank=True)
 
     class Meta:
         db_table = 'api_project'

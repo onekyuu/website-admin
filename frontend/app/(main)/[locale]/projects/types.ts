@@ -13,6 +13,7 @@ export interface ProjectBase {
   need_ai_generate: boolean;
   github_url?: string;
   live_demo_url?: string;
+  involved_areas?: string;
 }
 export interface ProjectTranslationData {
   title: string;
@@ -44,6 +45,7 @@ export interface CreateProjectBaseData {
   need_ai_generate: boolean;
   github_url?: string;
   live_demo_url?: string;
+  involved_areas?: string;
 }
 
 export type CreateProjectData = CreateProjectBaseData & {
@@ -69,6 +71,7 @@ export interface NewProjectData {
   need_ai_generate: boolean;
   github_url?: string;
   live_demo_url?: string;
+  involved_areas?: string;
 }
 
 export interface UpdateProjectExtraInfo {

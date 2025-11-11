@@ -40,6 +40,8 @@ const Project = {
   githubURLPlaceholder: "Enter GitHub repository URL",
   liveDemoURL: "Live Demo URL",
   liveDemoURLPlaceholder: "Enter live demo URL",
+  involvedAreas: "Involved Areas",
+  involvedAreasPlaceholder: "Enter involved areas (e.g., Frontend, Backend)",
   Skill: {
     type: "Skill Type",
     nameErrorMessage: "Please enter a skill name.",

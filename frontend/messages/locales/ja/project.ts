@@ -41,6 +41,9 @@ const Project = {
   githubURLPlaceholder: "GitHubリポジトリのURLを入力してください",
   liveDemoURL: "ライブデモのURL",
   liveDemoURLPlaceholder: "ライブデモのURLを入力してください",
+  involvedAreas: "関与した分野",
+  involvedAreasPlaceholder:
+    "関与した分野を入力してください（例：フロントエンド、バックエンド）",
   Skill: {
     type: "スキルタイプ",
     nameErrorMessage: "スキル名を入力してください。",

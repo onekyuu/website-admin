@@ -34,6 +34,7 @@ const ProjectCreatePage = () => {
     need_ai_generate: false,
     github_url: "",
     live_demo_url: "",
+    involved_areas: "",
     translations: {
       [locale]: {
         title: "",
@@ -78,6 +79,7 @@ const ProjectCreatePage = () => {
       need_ai_generate: data.need_ai_generate || false,
       github_url: data.github_url || "",
       live_demo_url: data.live_demo_url || "",
+      involved_areas: data.involved_areas || "",
     }));
   };
 
@@ -157,7 +159,9 @@ const ProjectCreatePage = () => {
                 is_featured: project.is_featured || false,
                 info: project.translations[option.value]?.info || [],
                 need_ai_generate: project.need_ai_generate || false,
-                github_url: "",
+                github_url: project.github_url || "",
+                live_demo_url: project.live_demo_url || "",
+                involved_areas: project.involved_areas || "",
               }}
               onChange={(data) => handleChange(data, option.value)}
             />
