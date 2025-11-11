@@ -24,6 +24,7 @@ export interface ProjectTranslationData {
   description?: string;
   info: string[];
   summary?: string;
+  tech_summary?: string;
   introduction?: string;
   challenges?: string[];
   solutions?: string;
@@ -59,6 +60,7 @@ export interface NewProjectData {
   description?: string;
   info: string[];
   summary?: string;
+  tech_summary?: string;
   introduction?: string;
   challenges?: string[];
   solutions?: string;

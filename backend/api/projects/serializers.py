@@ -33,7 +33,7 @@ class ProjectTranslationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectTranslation
         fields = ['language', 'title', 'subtitle', 'description', 'info',
-                  'summary', 'introduction', 'challenges', 'solutions',
+                  'summary', 'tech_summary', 'introduction', 'challenges', 'solutions',
                   'what_i_did', 'extra_info']
 
     def validate_subtitle(self, value):
@@ -96,6 +96,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                 "description": t.description,
                 "info": t.info,
                 "summary": t.summary,
+                "tech_summary": t.tech_summary,
                 "introduction": t.introduction,
                 "challenges": t.challenges,
                 "solutions": t.solutions,
