@@ -41,6 +41,8 @@ const Project = {
   githubURLPlaceholder: "请输入GitHub仓库链接",
   liveDemoURL: "在线演示链接",
   liveDemoURLPlaceholder: "请输入在线演示链接",
+  involvedAreas: "涉及领域",
+  involvedAreasPlaceholder: "请输入涉及领域（例如：前端，后端）",
   Skill: {
     type: "技能类型",
     nameErrorMessage: "请输入技能名称。",

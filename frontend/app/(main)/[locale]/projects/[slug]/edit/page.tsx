@@ -112,6 +112,7 @@ const ProjectEditPage = () => {
       draft.is_featured = data.is_featured || false;
       draft.github_url = data.github_url || "";
       draft.live_demo_url = data.live_demo_url || "";
+      draft.involved_areas = data.involved_areas || "";
     });
   };
 
@@ -138,6 +139,7 @@ const ProjectEditPage = () => {
         extra_info: newProject.translations?.[lang]?.extra_info || {},
         github_url: newProject.github_url || "",
         live_demo_url: newProject.live_demo_url || "",
+        involved_areas: newProject.involved_areas || "",
       };
     },
     [newProject, projectData],
@@ -156,6 +158,7 @@ const ProjectEditPage = () => {
         is_featured: projectData.is_featured || false,
         github_url: projectData.github_url || "",
         live_demo_url: projectData.live_demo_url || "",
+        involved_areas: projectData.involved_areas || "",
       });
     }
   }, [projectData, setNewProject]);
