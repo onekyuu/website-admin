@@ -40,6 +40,7 @@ const ProjectCreatePage = () => {
         title: "",
         subtitle: { start: "", end: "" },
         summary: "",
+        tech_summary: "",
         introduction: "",
         challenges: [],
         solutions: "",
@@ -65,6 +66,7 @@ const ProjectCreatePage = () => {
             end: data.subtitle_end || "",
           },
           summary: data.summary || "",
+          tech_summary: data.tech_summary || "",
           introduction: data.introduction || "",
           challenges: data.challenges || [],
           solutions: data.solutions || "",
@@ -162,6 +164,18 @@ const ProjectCreatePage = () => {
                 github_url: project.github_url || "",
                 live_demo_url: project.live_demo_url || "",
                 involved_areas: project.involved_areas || "",
+                summary: project.translations[option.value]?.summary || "",
+                tech_summary:
+                  project.translations[option.value]?.tech_summary || "",
+                introduction:
+                  project.translations[option.value]?.introduction || "",
+                challenges:
+                  project.translations[option.value]?.challenges || [],
+                solutions: project.translations[option.value]?.solutions || "",
+                what_i_did:
+                  project.translations[option.value]?.what_i_did || [],
+                extra_info:
+                  project.translations[option.value]?.extra_info || {},
               }}
               onChange={(data) => handleChange(data, option.value)}
             />

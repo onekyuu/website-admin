@@ -57,6 +57,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
     subtitle_start: z.string().optional(),
     subtitle_end: z.string().optional(),
     summary: z.string().optional(),
+    tech_summary: z.string().optional(),
     introduction: z.string().optional(),
     challenges: z.array(z.string()).optional(),
     solutions: z.string().optional(),
@@ -83,6 +84,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
       subtitle_start: initialData?.subtitle_start || "",
       subtitle_end: initialData?.subtitle_end || "",
       summary: initialData?.summary || "",
+      tech_summary: initialData?.tech_summary || "",
       introduction: initialData?.introduction || "",
       challenges: initialData?.challenges || [],
       solutions: initialData?.solutions || "",
@@ -363,6 +365,18 @@ const ProjectForm: FC<ProjectFormProps> = ({
                   />
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="tech_summary"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("techSummary")}</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder={t("techSummaryPlaceholder")} />
+                </FormControl>
               </FormItem>
             )}
           />

@@ -49,6 +49,7 @@ class ProjectTranslation(models.Model):
     description = models.TextField(null=True, blank=True)
     info = models.JSONField(default=list, blank=True)
     summary = models.TextField(null=True, blank=True)
+    tech_summary = models.TextField(null=True, blank=True)
     introduction = models.TextField(null=True, blank=True)
     challenges = models.JSONField(default=list, blank=True)
     solutions = models.TextField(null=True, blank=True)

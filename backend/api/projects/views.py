@@ -62,7 +62,10 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         description=source_translation.get('description', ''),
                         info=source_translation.get('info', []),
                         summary=source_translation.get('summary', ''),
-                        introduction=source_translation.get('introduction', ''),
+                        tech_summary=source_translation.get(
+                            'tech_summary', ''),
+                        introduction=source_translation.get(
+                            'introduction', ''),
                         challenges=source_translation.get('challenges', []),
                         solutions=source_translation.get('solutions', ''),
                         what_i_did=source_translation.get('what_i_did', []),
@@ -88,6 +91,14 @@ class ProjectCreateApiView(generics.CreateAPIView):
                     if source_translation.get('summary'):
                         translated_summary = translate_text(
                             source_translation['summary'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    translated_tech_summary = ''
+                    if source_translation.get('tech_summary'):
+                        translated_tech_summary = translate_text(
+                            source_translation['tech_summary'],
                             source_lang,
                             target_lang
                         )
@@ -147,6 +158,7 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         description=translated_description,
                         info=translated_info,
                         summary=translated_summary,
+                        tech_summary=translated_tech_summary,
                         introduction=translated_introduction,
                         challenges=translated_challenges,
                         solutions=translated_solutions,
@@ -165,6 +177,7 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         description=translation_data.get('description', ''),
                         info=translation_data.get('info', []),
                         summary=translation_data.get('summary', ''),
+                        tech_summary=translation_data.get('tech_summary', ''),
                         introduction=translation_data.get('introduction', ''),
                         challenges=translation_data.get('challenges', []),
                         solutions=translation_data.get('solutions', ''),
@@ -214,6 +227,7 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                 translation_data.get('description', '') != existing.description or
                 translation_data.get('info', []) != existing.info or
                 translation_data.get('summary', '') != existing.summary or
+                translation_data.get('tech_summary', '') != existing.tech_summary or
                 translation_data.get('introduction', '') != existing.introduction or
                 translation_data.get('challenges', []) != existing.challenges or
                 translation_data.get('solutions', '') != existing.solutions or
@@ -275,6 +289,7 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                             'description': source_translation.get('description', ''),
                             'info': source_translation.get('info', []),
                             'summary': source_translation.get('summary', ''),
+                            'tech_summary': source_translation.get('tech_summary', ''),
                             'introduction': source_translation.get('introduction', ''),
                             'challenges': source_translation.get('challenges', []),
                             'solutions': source_translation.get('solutions', ''),
@@ -302,6 +317,14 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                     if source_translation.get('summary'):
                         translated_summary = translate_text(
                             source_translation['summary'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    translated_tech_summary = ''
+                    if source_translation.get('tech_summary'):
+                        translated_tech_summary = translate_text(
+                            source_translation['tech_summary'],
                             source_lang,
                             target_lang
                         )
@@ -362,6 +385,7 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                             'description': translated_description,
                             'info': translated_info,
                             'summary': translated_summary,
+                            'tech_summary': translated_tech_summary,
                             'introduction': translated_introduction,
                             'challenges': translated_challenges,
                             'solutions': translated_solutions,
@@ -382,6 +406,7 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                             'description': translation_data.get('description', ''),
                             'info': translation_data.get('info', []),
                             'summary': translation_data.get('summary', ''),
+                            'tech_summary': translation_data.get('tech_summary', ''),
                             'introduction': translation_data.get('introduction', ''),
                             'challenges': translation_data.get('challenges', []),
                             'solutions': translation_data.get('solutions', ''),
