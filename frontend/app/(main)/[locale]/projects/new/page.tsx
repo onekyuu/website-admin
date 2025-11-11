@@ -35,6 +35,7 @@ const ProjectCreatePage = () => {
     github_url: "",
     live_demo_url: "",
     involved_areas: "",
+    tools: "",
     translations: {
       [locale]: {
         title: "",
@@ -82,6 +83,7 @@ const ProjectCreatePage = () => {
       github_url: data.github_url || "",
       live_demo_url: data.live_demo_url || "",
       involved_areas: data.involved_areas || "",
+      tools: data.tools || "",
     }));
   };
 
@@ -164,6 +166,7 @@ const ProjectCreatePage = () => {
                 github_url: project.github_url || "",
                 live_demo_url: project.live_demo_url || "",
                 involved_areas: project.involved_areas || "",
+                tools: project.tools || "",
                 summary: project.translations[option.value]?.summary || "",
                 tech_summary:
                   project.translations[option.value]?.tech_summary || "",

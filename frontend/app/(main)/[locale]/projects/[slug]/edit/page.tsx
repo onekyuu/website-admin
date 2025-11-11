@@ -114,6 +114,7 @@ const ProjectEditPage = () => {
       draft.github_url = data.github_url || "";
       draft.live_demo_url = data.live_demo_url || "";
       draft.involved_areas = data.involved_areas || "";
+      draft.tools = data.tools || "";
     });
   };
 
@@ -142,6 +143,7 @@ const ProjectEditPage = () => {
         github_url: newProject.github_url || "",
         live_demo_url: newProject.live_demo_url || "",
         involved_areas: newProject.involved_areas || "",
+        tools: newProject.tools || "",
       };
     },
     [newProject, projectData],
@@ -161,6 +163,7 @@ const ProjectEditPage = () => {
         github_url: projectData.github_url || "",
         live_demo_url: projectData.live_demo_url || "",
         involved_areas: projectData.involved_areas || "",
+        tools: projectData.tools || "",
       });
     }
   }, [projectData, setNewProject]);

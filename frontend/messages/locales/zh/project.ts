@@ -45,6 +45,8 @@ const Project = {
   liveDemoURLPlaceholder: "请输入在线演示链接",
   involvedAreas: "涉及领域",
   involvedAreasPlaceholder: "请输入涉及领域（例如：前端，后端）",
+  tools: "使用工具",
+  toolsPlaceholder: "请输入项目中使用的工具",
   Skill: {
     type: "技能类型",
     nameErrorMessage: "请输入技能名称。",
