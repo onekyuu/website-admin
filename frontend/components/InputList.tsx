@@ -14,7 +14,7 @@ interface InputListProps {
   addText: string;
   onChange?: (index: number, value: string) => void;
   onRemove?: (index: number) => void;
-  onAdd?: () => void;
+  onAdd?: (maxItems?: number) => void;
   maxItems?: number;
 }
 
@@ -51,7 +51,7 @@ const InputList: FC<InputListProps> = ({
         <Button
           type="button"
           variant="outline"
-          onClick={() => onAdd?.()}
+          onClick={() => onAdd?.(maxItems)}
           className="w-full"
         >
           <Plus className="h-4 w-4 mr-2" />
