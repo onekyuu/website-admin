@@ -14,6 +14,7 @@ export interface ProjectBase {
   github_url?: string;
   live_demo_url?: string;
   involved_areas?: string;
+  tools?: string;
 }
 export interface ProjectTranslationData {
   title: string;
@@ -47,6 +48,7 @@ export interface CreateProjectBaseData {
   github_url?: string;
   live_demo_url?: string;
   involved_areas?: string;
+  tools?: string;
 }
 
 export type CreateProjectData = CreateProjectBaseData & {
@@ -74,6 +76,7 @@ export interface NewProjectData {
   github_url?: string;
   live_demo_url?: string;
   involved_areas?: string;
+  tools?: string;
 }
 
 export interface UpdateProjectExtraInfo {

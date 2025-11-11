@@ -46,6 +46,8 @@ const Project = {
   involvedAreas: "関与した分野",
   involvedAreasPlaceholder:
     "関与した分野を入力してください（例：フロントエンド、バックエンド）",
+  tools: "ツール",
+  toolsPlaceholder: "プロジェクトで使用したツールを入力してください",
   Skill: {
     type: "スキルタイプ",
     nameErrorMessage: "スキル名を入力してください。",

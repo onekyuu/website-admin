@@ -44,6 +44,8 @@ const Project = {
   liveDemoURLPlaceholder: "Enter live demo URL",
   involvedAreas: "Involved Areas",
   involvedAreasPlaceholder: "Enter involved areas (e.g., Frontend, Backend)",
+  tools: "Tools",
+  toolsPlaceholder: "Enter tools used in the project",
   Skill: {
     type: "Skill Type",
     nameErrorMessage: "Please enter a skill name.",
