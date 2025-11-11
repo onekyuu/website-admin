@@ -27,6 +27,8 @@ const Project = {
   subtitleEndPlaceholder: "サブタイトル終了を入力してください",
   summary: "概要",
   summaryPlaceholder: "プロジェクトの概要を入力してください",
+  techSummary: "技術概要",
+  techSummaryPlaceholder: "プロジェクトの技術概要を入力してください",
   introduction: "紹介",
   introductionPlaceholder: "プロジェクトの紹介を入力してください",
   challenges: "課題",
