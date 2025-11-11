@@ -9,6 +9,12 @@ class ProjectSkillSerializer(serializers.ModelSerializer):
                   'image_url', 'created_at', 'updated_at']
 
 
+class WhatIDidItemSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200)
+    description = serializers.CharField(max_length=1000)
+    icon = serializers.CharField(max_length=50)
+
+
 class ProjectTranslationSerializer(serializers.ModelSerializer):
     info = serializers.ListField(
         child=serializers.CharField(max_length=500),
@@ -23,7 +29,7 @@ class ProjectTranslationSerializer(serializers.ModelSerializer):
         allow_empty=True,
     )
     what_i_did = serializers.ListField(
-        child=serializers.CharField(max_length=500),
+        child=WhatIDidItemSerializer(),
         required=False,
         allow_empty=True,
     )
@@ -33,11 +39,10 @@ class ProjectTranslationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectTranslation
         fields = ['language', 'title', 'subtitle', 'description', 'info',
-                  'summary', 'tech_summary', 'introduction', 'challenges', 'solutions',
-                  'what_i_did', 'extra_info']
+                  'summary', 'tech_summary', 'introduction', 'challenges',
+                  'solutions', 'what_i_did', 'extra_info']
 
     def validate_subtitle(self, value):
-        """验证 subtitle 格式"""
         if value:
             if not isinstance(value, dict):
                 raise serializers.ValidationError("Subtitle must be an object")
@@ -52,6 +57,22 @@ class ProjectTranslationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "Subtitle start and end must be strings"
                 )
+
+        return value
+
+    def validate_what_i_did(self, value):
+        if value:
+            for item in value:
+                if not isinstance(item, dict):
+                    raise serializers.ValidationError(
+                        "Each item must be an object"
+                    )
+
+                required_keys = {'title', 'description', 'icon'}
+                if not required_keys.issubset(item.keys()):
+                    raise serializers.ValidationError(
+                        f"Each item must contain: {required_keys}"
+                    )
 
         return value
 
@@ -74,18 +95,22 @@ class ProjectSerializer(serializers.ModelSerializer):
         required=False,
         default=list
     )
-    need_ai_generate = serializers.BooleanField(required=False)
+    need_ai_generate = serializers.BooleanField(required=False, default=True)
     github_url = serializers.URLField(
         required=False, allow_blank=True, allow_null=True)
     live_demo_url = serializers.URLField(
         required=False, allow_blank=True, allow_null=True)
+    involved_areas = serializers.CharField(required=False, allow_blank=True)
+    tools = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Project
-        fields = ["id", "translations", "slug", "created_by",
-                  "created_at", "updated_at", "skills", "skill_ids",
-                  "images", "detail_images", "is_featured", "need_ai_generate",
-                  "github_url", "live_demo_url", "involved_areas", "tools"]
+        fields = [
+            'id', 'translations', 'slug', 'created_by',
+            'created_at', 'updated_at', 'skills', 'skill_ids',
+            'images', 'detail_images', 'is_featured', 'need_ai_generate',
+            'github_url', 'live_demo_url', 'involved_areas', 'tools'
+        ]
         read_only_fields = ['slug', 'created_by', 'created_at', 'updated_at']
 
     def get_translations(self, obj):

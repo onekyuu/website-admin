@@ -19,7 +19,10 @@ import Image from "next/image";
 import { Skill } from "@/app/(main)/[locale]/projects/skills/types";
 import { MultiSelectCheckbox, Option } from "./ui/multi-select-checkbox";
 import MarkdownEditor from "./MarkdownEditor";
-import { NewProjectData } from "@/app/(main)/[locale]/projects/types";
+import {
+  NewProjectData,
+  WhatIDidItem,
+} from "@/app/(main)/[locale]/projects/types";
 import { Switch } from "./ui/switch";
 import { useAuthStore } from "@/lib/stores/auth";
 import { Textarea } from "./ui/textarea";
@@ -61,7 +64,15 @@ const ProjectForm: FC<ProjectFormProps> = ({
     introduction: z.string().optional(),
     challenges: z.array(z.string()).optional(),
     solutions: z.string().optional(),
-    what_i_did: z.array(z.string()).optional(),
+    what_i_did: z
+      .array(
+        z.object({
+          title: z.string().min(1, "Title is required"),
+          description: z.string().min(1, "Description is required"),
+          icon: z.string().min(1, "Icon is required"),
+        }),
+      )
+      .optional(),
     description: z.string(),
     images: z.array(z.string()),
     detail_images: z.array(z.string()).optional(),
@@ -182,7 +193,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
   const handleAddInputItem = (
     field: ControllerRenderProps<
       z.infer<typeof formSchema>,
-      "info" | "challenges" | "what_i_did"
+      "info" | "challenges"
     >,
     maxItems?: number,
   ) => {
@@ -200,7 +211,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
   const handleRemoveInputItem = (
     field: ControllerRenderProps<
       z.infer<typeof formSchema>,
-      "info" | "challenges" | "what_i_did"
+      "info" | "challenges"
     >,
     index: number,
   ) => {
@@ -211,7 +222,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
   const handleChangeInputItem = (
     field: ControllerRenderProps<
       z.infer<typeof formSchema>,
-      "info" | "challenges" | "what_i_did"
+      "info" | "challenges"
     >,
     index: number,
     value: string,
@@ -220,6 +231,37 @@ const ProjectForm: FC<ProjectFormProps> = ({
     const updatedInfo = [...field.value];
     updatedInfo[index] = value;
     field.onChange(updatedInfo);
+  };
+
+  const handleAddWhatIDidItem = (
+    field: ControllerRenderProps<z.infer<typeof formSchema>, "what_i_did">,
+  ) => {
+    const newItem: WhatIDidItem = {
+      title: "",
+      description: "",
+      icon: "lightbulb",
+    };
+    field.onChange([...(field.value || []), newItem]);
+  };
+
+  const handleRemoveWhatIDidItem = (
+    field: ControllerRenderProps<z.infer<typeof formSchema>, "what_i_did">,
+    index: number,
+  ) => {
+    const updated = field.value?.filter((_, i) => i !== index);
+    field.onChange(updated);
+  };
+
+  const handleChangeWhatIDidItem = (
+    field: ControllerRenderProps<z.infer<typeof formSchema>, "what_i_did">,
+    index: number,
+    key: keyof WhatIDidItem,
+    value: string,
+  ) => {
+    if (!field.value) return;
+    const updated = [...field.value];
+    updated[index] = { ...updated[index], [key]: value };
+    field.onChange(updated);
   };
 
   useEffect(() => {
@@ -492,8 +534,8 @@ const ProjectForm: FC<ProjectFormProps> = ({
                 <FormControl>
                   <InputList
                     field={field}
-                    placeholder={t("infoPlaceholder")}
-                    addText={t("addInfo")}
+                    placeholder={t("challengesPlaceholder")}
+                    addText={t("addChallenge")}
                     onAdd={() => handleAddInputItem(field)}
                     onChange={(index, value) =>
                       handleChangeInputItem(field, index, value)
@@ -528,16 +570,88 @@ const ProjectForm: FC<ProjectFormProps> = ({
               <FormItem>
                 <FormLabel>{t("whatIDid")}</FormLabel>
                 <FormControl>
-                  <InputList
-                    field={field}
-                    placeholder={t("infoPlaceholder")}
-                    addText={t("addInfo")}
-                    onAdd={() => handleAddInputItem(field)}
-                    onChange={(index, value) =>
-                      handleChangeInputItem(field, index, value)
-                    }
-                    onRemove={(index) => handleRemoveInputItem(field, index)}
-                  />
+                  <div className="space-y-4">
+                    {field.value?.map((item, index) => (
+                      <div
+                        key={index}
+                        className="border rounded-lg p-4 space-y-3 relative"
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveWhatIDidItem(field, index)}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+
+                        <div>
+                          <label className="text-sm font-medium">
+                            {t("whatIDidTitle")}
+                          </label>
+                          <Input
+                            value={item.title}
+                            onChange={(e) =>
+                              handleChangeWhatIDidItem(
+                                field,
+                                index,
+                                "title",
+                                e.target.value,
+                              )
+                            }
+                            placeholder={t("whatIDidTitlePlaceholder")}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium">
+                            {t("whatIDidDescription")}
+                          </label>
+                          <Textarea
+                            value={item.description}
+                            onChange={(e) =>
+                              handleChangeWhatIDidItem(
+                                field,
+                                index,
+                                "description",
+                                e.target.value,
+                              )
+                            }
+                            placeholder={t("whatIDidDescriptionPlaceholder")}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium">
+                            {t("whatIDidIcon")}
+                          </label>
+                          <Input
+                            value={item.icon}
+                            onChange={(e) =>
+                              handleChangeWhatIDidItem(
+                                field,
+                                index,
+                                "icon",
+                                e.target.value,
+                              )
+                            }
+                            placeholder={t("whatIDidIconPlaceholder")}
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleAddWhatIDidItem(field)}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t("addWhatIDid")}
+                    </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
