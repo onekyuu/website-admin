@@ -58,8 +58,15 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         project=project,
                         language=target_lang,
                         title=source_translation.get('title', ''),
+                        subtitle=source_translation.get('subtitle', {}),
                         description=source_translation.get('description', ''),
                         info=source_translation.get('info', []),
+                        summary=source_translation.get('summary', ''),
+                        introduction=source_translation.get('introduction', ''),
+                        challenges=source_translation.get('challenges', []),
+                        solutions=source_translation.get('solutions', ''),
+                        what_i_did=source_translation.get('what_i_did', []),
+                        extra_info=source_translation.get('extra_info', {}),
                     )
                 else:
                     # 翻译其他语言
@@ -77,23 +84,74 @@ class ProjectCreateApiView(generics.CreateAPIView):
                             target_lang
                         )
 
+                    translated_summary = ''
+                    if source_translation.get('summary'):
+                        translated_summary = translate_text(
+                            source_translation['summary'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    translated_introduction = ''
+                    if source_translation.get('introduction'):
+                        translated_introduction = translate_text(
+                            source_translation['introduction'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    translated_solutions = ''
+                    if source_translation.get('solutions'):
+                        translated_solutions = translate_text(
+                            source_translation['solutions'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    # 翻译列表字段
                     translated_info = []
-                    source_info = source_translation.get('info', [])
-                    for info_item in source_info:
-                        if info_item:
-                            translated_item = translate_text(
-                                info_item,
-                                source_lang,
-                                target_lang
+                    for item in source_translation.get('info', []):
+                        if item:
+                            translated_info.append(
+                                translate_text(item, source_lang, target_lang)
                             )
-                            translated_info.append(translated_item)
+
+                    translated_challenges = []
+                    for item in source_translation.get('challenges', []):
+                        if item:
+                            translated_challenges.append(
+                                translate_text(item, source_lang, target_lang)
+                            )
+
+                    translated_what_i_did = []
+                    for item in source_translation.get('what_i_did', []):
+                        if item:
+                            translated_what_i_did.append(
+                                translate_text(item, source_lang, target_lang)
+                            )
+
+                    # subtitle 特殊处理
+                    translated_subtitle = {}
+                    if source_translation.get('subtitle'):
+                        subtitle = source_translation['subtitle']
+                        translated_subtitle = {
+                            'start': translate_text(subtitle.get('start', ''), source_lang, target_lang),
+                            'end': translate_text(subtitle.get('end', ''), source_lang, target_lang),
+                        }
 
                     ProjectTranslation.objects.create(
                         project=project,
                         language=target_lang,
                         title=translated_title,
+                        subtitle=translated_subtitle,
                         description=translated_description,
-                        info=translated_info
+                        info=translated_info,
+                        summary=translated_summary,
+                        introduction=translated_introduction,
+                        challenges=translated_challenges,
+                        solutions=translated_solutions,
+                        what_i_did=translated_what_i_did,
+                        extra_info=source_translation.get('extra_info', {}),
                     )
         else:
             # 手动模式：直接保存所有提供的语言内容
@@ -103,8 +161,15 @@ class ProjectCreateApiView(generics.CreateAPIView):
                         project=project,
                         language=lang,
                         title=translation_data.get('title', ''),
+                        subtitle=translation_data.get('subtitle', {}),
                         description=translation_data.get('description', ''),
                         info=translation_data.get('info', []),
+                        summary=translation_data.get('summary', ''),
+                        introduction=translation_data.get('introduction', ''),
+                        challenges=translation_data.get('challenges', []),
+                        solutions=translation_data.get('solutions', ''),
+                        what_i_did=translation_data.get('what_i_did', []),
+                        extra_info=translation_data.get('extra_info', {}),
                     )
 
         response_serializer = self.get_serializer(project)
@@ -125,11 +190,10 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsAdminOrReadOnly()]
 
     def _has_translation_updates(self, translations_data, project):
-        """检查是否有翻译内容的更新（title、description、info）"""
+        """检查是否有翻译内容的更新"""
         if not translations_data:
             return False
 
-        # 按优先级查找源语言：中文 > 日语 > 英语
         supported_languages = ['zh', 'ja', 'en']
 
         for lang in supported_languages:
@@ -140,15 +204,21 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             if not translation_data.get('title'):
                 continue
 
-            # 获取现有翻译
             existing = project.translations.filter(language=lang).first()
             if not existing:
                 return True
 
             # 检查是否有内容变化
             if (translation_data.get('title', '') != existing.title or
+                translation_data.get('subtitle', {}) != existing.subtitle or
                 translation_data.get('description', '') != existing.description or
-                    translation_data.get('info', []) != existing.info):
+                translation_data.get('info', []) != existing.info or
+                translation_data.get('summary', '') != existing.summary or
+                translation_data.get('introduction', '') != existing.introduction or
+                translation_data.get('challenges', []) != existing.challenges or
+                translation_data.get('solutions', '') != existing.solutions or
+                translation_data.get('what_i_did', []) != existing.what_i_did or
+                    translation_data.get('extra_info', {}) != existing.extra_info):
                 return True
 
         return False
@@ -201,8 +271,15 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                         language=target_lang,
                         defaults={
                             'title': source_translation.get('title', ''),
+                            'subtitle': source_translation.get('subtitle', {}),
                             'description': source_translation.get('description', ''),
                             'info': source_translation.get('info', []),
+                            'summary': source_translation.get('summary', ''),
+                            'introduction': source_translation.get('introduction', ''),
+                            'challenges': source_translation.get('challenges', []),
+                            'solutions': source_translation.get('solutions', ''),
+                            'what_i_did': source_translation.get('what_i_did', []),
+                            'extra_info': source_translation.get('extra_info', {}),
                         }
                     )
                 else:
@@ -221,24 +298,75 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                             target_lang
                         )
 
+                    translated_summary = ''
+                    if source_translation.get('summary'):
+                        translated_summary = translate_text(
+                            source_translation['summary'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    translated_introduction = ''
+                    if source_translation.get('introduction'):
+                        translated_introduction = translate_text(
+                            source_translation['introduction'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    translated_solutions = ''
+                    if source_translation.get('solutions'):
+                        translated_solutions = translate_text(
+                            source_translation['solutions'],
+                            source_lang,
+                            target_lang
+                        )
+
+                    # 翻译列表字段
                     translated_info = []
-                    source_info = source_translation.get('info', [])
-                    for info_item in source_info:
-                        if info_item:
-                            translated_item = translate_text(
-                                info_item,
-                                source_lang,
-                                target_lang
+                    for item in source_translation.get('info', []):
+                        if item:
+                            translated_info.append(
+                                translate_text(item, source_lang, target_lang)
                             )
-                            translated_info.append(translated_item)
+
+                    translated_challenges = []
+                    for item in source_translation.get('challenges', []):
+                        if item:
+                            translated_challenges.append(
+                                translate_text(item, source_lang, target_lang)
+                            )
+
+                    translated_what_i_did = []
+                    for item in source_translation.get('what_i_did', []):
+                        if item:
+                            translated_what_i_did.append(
+                                translate_text(item, source_lang, target_lang)
+                            )
+
+                    # subtitle 特殊处理
+                    translated_subtitle = {}
+                    if source_translation.get('subtitle'):
+                        subtitle = source_translation['subtitle']
+                        translated_subtitle = {
+                            'start': translate_text(subtitle.get('start', ''), source_lang, target_lang),
+                            'end': translate_text(subtitle.get('end', ''), source_lang, target_lang),
+                        }
 
                     ProjectTranslation.objects.update_or_create(
                         project=project,
                         language=target_lang,
                         defaults={
                             'title': translated_title,
+                            'subtitle': translated_subtitle,
                             'description': translated_description,
                             'info': translated_info,
+                            'summary': translated_summary,
+                            'introduction': translated_introduction,
+                            'challenges': translated_challenges,
+                            'solutions': translated_solutions,
+                            'what_i_did': translated_what_i_did,
+                            'extra_info': source_translation.get('extra_info', {}),
                         }
                     )
         else:
@@ -250,8 +378,15 @@ class ProjectDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                         language=lang,
                         defaults={
                             'title': translation_data.get('title', ''),
+                            'subtitle': translation_data.get('subtitle', {}),
                             'description': translation_data.get('description', ''),
                             'info': translation_data.get('info', []),
+                            'summary': translation_data.get('summary', ''),
+                            'introduction': translation_data.get('introduction', ''),
+                            'challenges': translation_data.get('challenges', []),
+                            'solutions': translation_data.get('solutions', ''),
+                            'what_i_did': translation_data.get('what_i_did', []),
+                            'extra_info': translation_data.get('extra_info', {}),
                         }
                     )
 

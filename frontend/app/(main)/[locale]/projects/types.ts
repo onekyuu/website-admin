@@ -7,14 +7,27 @@ export interface ProjectBase {
   created_at: string;
   updated_at: string;
   images: string[];
+  detail_images?: string[];
   skills: Skill[];
   is_featured: boolean;
   need_ai_generate: boolean;
+  github_url?: string;
+  live_demo_url?: string;
 }
 export interface ProjectTranslationData {
   title: string;
-  description: string;
+  subtitle?: {
+    start: string;
+    end: string;
+  };
+  description?: string;
   info: string[];
+  summary?: string;
+  introduction?: string;
+  challenges?: string[];
+  solutions?: string;
+  what_i_did?: string[];
+  extra_info?: Record<string, string | string[] | Record<string, string>>;
 }
 
 export type ProjectTranslation = {
@@ -25,9 +38,12 @@ export type Project = ProjectBase & { translations: ProjectTranslation };
 
 export interface CreateProjectBaseData {
   images?: string[];
+  detail_images?: string[];
   skill_ids?: number[];
   is_featured: boolean;
   need_ai_generate: boolean;
+  github_url?: string;
+  live_demo_url?: string;
 }
 
 export type CreateProjectData = CreateProjectBaseData & {
@@ -36,12 +52,23 @@ export type CreateProjectData = CreateProjectBaseData & {
 
 export interface NewProjectData {
   title: string;
-  description: string;
+  subtitle_start?: string;
+  subtitle_end?: string;
+  description?: string;
   info: string[];
+  summary?: string;
+  introduction?: string;
+  challenges?: string[];
+  solutions?: string;
+  what_i_did?: string[];
+  extra_info?: Record<string, string | string[] | Record<string, string>>;
   images?: string[];
+  detail_images?: string[];
   skill_ids: number[];
   is_featured: boolean;
   need_ai_generate: boolean;
+  github_url?: string;
+  live_demo_url?: string;
 }
 
 export interface UpdateProjectExtraInfo {
