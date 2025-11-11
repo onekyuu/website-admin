@@ -27,6 +27,8 @@ const Project = {
   subtitleEndPlaceholder: "请输入子标题结束",
   summary: "概要",
   summaryPlaceholder: "请输入项目概要",
+  techSummary: "技术概要",
+  techSummaryPlaceholder: "请输入项目技术概要",
   introduction: "介绍",
   introductionPlaceholder: "请输入项目介绍",
   challenges: "挑战",

@@ -26,6 +26,8 @@ const Project = {
   subtitleEndPlaceholder: "Enter end subtitle",
   summary: "Summary",
   summaryPlaceholder: "Enter project summary",
+  techSummary: "Tech Summary",
+  techSummaryPlaceholder: "Enter project tech summary",
   introduction: "Introduction",
   introductionPlaceholder: "Enter project introduction",
   challenges: "Challenges",
