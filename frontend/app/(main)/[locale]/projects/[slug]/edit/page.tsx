@@ -1,7 +1,7 @@
 "use client";
 
 import { get, patch } from "@/lib/fetcher";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ const ProjectEditPage = () => {
   const locale = params?.locale as LanguageCode;
   const t = useTranslations();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const userPermissions = useAuthStore(
     (state) => state.allUserData,
   )?.permissions;
@@ -56,6 +57,7 @@ const ProjectEditPage = () => {
     mutationFn: handleSaveProject,
     onSuccess: (data) => {
       toast.success("更新成功");
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       router.push("/projects");
     },
     onError: (error) => {
@@ -91,12 +93,25 @@ const ProjectEditPage = () => {
         title: data.title || "",
         description: data.description || "",
         info: data.info || [],
+        subtitle: {
+          start: data.subtitle_start || "",
+          end: data.subtitle_end || "",
+        },
+        summary: data.summary || "",
+        introduction: data.introduction || "",
+        challenges: data.challenges || [],
+        solutions: data.solutions || "",
+        what_i_did: data.what_i_did || [],
+        extra_info: data.extra_info || {},
       };
 
       draft.images = data.images;
+      draft.detail_images = data.detail_images;
       draft.skill_ids = data.skill_ids || [];
       draft.need_ai_generate = data.need_ai_generate || false;
       draft.is_featured = data.is_featured || false;
+      draft.github_url = data.github_url || "";
+      draft.live_demo_url = data.live_demo_url || "";
     });
   };
 
@@ -106,12 +121,23 @@ const ProjectEditPage = () => {
 
       return {
         images: newProject.images || [],
+        detail_images: newProject.detail_images || [],
         title: newProject.translations?.[lang]?.title || "",
         description: newProject.translations?.[lang]?.description || "",
         skill_ids: newProject.skill_ids || [],
         info: newProject.translations?.[lang]?.info || [],
         need_ai_generate: newProject.need_ai_generate || false,
         is_featured: newProject.is_featured || false,
+        subtitle_start: newProject.translations?.[lang]?.subtitle?.start || "",
+        subtitle_end: newProject.translations?.[lang]?.subtitle?.end || "",
+        summary: newProject.translations?.[lang]?.summary || "",
+        introduction: newProject.translations?.[lang]?.introduction || "",
+        challenges: newProject.translations?.[lang]?.challenges || [],
+        solutions: newProject.translations?.[lang]?.solutions || "",
+        what_i_did: newProject.translations?.[lang]?.what_i_did || [],
+        extra_info: newProject.translations?.[lang]?.extra_info || {},
+        github_url: newProject.github_url || "",
+        live_demo_url: newProject.live_demo_url || "",
       };
     },
     [newProject, projectData],
@@ -124,9 +150,12 @@ const ProjectEditPage = () => {
         slug: projectData.slug,
         translations: projectData.translations,
         images: projectData.images,
+        detail_images: projectData.detail_images,
         skill_ids: projectData.skills.map((skill) => skill.id),
         need_ai_generate: projectData.need_ai_generate || false,
         is_featured: projectData.is_featured || false,
+        github_url: projectData.github_url || "",
+        live_demo_url: projectData.live_demo_url || "",
       });
     }
   }, [projectData, setNewProject]);

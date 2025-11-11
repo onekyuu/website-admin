@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import ProjectForm from "@/components/ProjectForm";
 import { get, post } from "@/lib/fetcher";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreateProjectData, NewProjectData, Project } from "../types";
 import { Skill } from "../skills/types";
@@ -22,17 +22,28 @@ const ProjectCreatePage = () => {
   const locale = params?.locale as LanguageCode;
   const t = useTranslations();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const userPermissions = useAuthStore(
     (state) => state.allUserData,
   )?.permissions;
   const [project, setProject] = React.useState<CreateProjectData>({
     images: [],
+    detail_images: [],
     skill_ids: [],
     is_featured: false,
     need_ai_generate: false,
+    github_url: "",
+    live_demo_url: "",
     translations: {
       [locale]: {
         title: "",
+        subtitle: { start: "", end: "" },
+        summary: "",
+        introduction: "",
+        challenges: [],
+        solutions: "",
+        what_i_did: [],
+        extra_info: {},
         description: "",
         info: [],
       },
@@ -48,12 +59,25 @@ const ProjectCreatePage = () => {
           title: data.title || "",
           description: data.description || "",
           info: data.info || [],
+          subtitle: {
+            start: data.subtitle_start || "",
+            end: data.subtitle_end || "",
+          },
+          summary: data.summary || "",
+          introduction: data.introduction || "",
+          challenges: data.challenges || [],
+          solutions: data.solutions || "",
+          what_i_did: data.what_i_did || [],
+          extra_info: data.extra_info || {},
         },
       },
       images: data.images,
+      detail_images: data.detail_images,
       skill_ids: data.skill_ids || [],
       is_featured: data.is_featured || false,
       need_ai_generate: data.need_ai_generate || false,
+      github_url: data.github_url || "",
+      live_demo_url: data.live_demo_url || "",
     }));
   };
 
@@ -69,6 +93,7 @@ const ProjectCreatePage = () => {
     mutationFn: handleSaveProject,
     onSuccess: (data) => {
       toast.success("创建成功");
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       router.push("/projects");
     },
     onError: (error) => {
@@ -77,7 +102,7 @@ const ProjectCreatePage = () => {
     },
   });
 
-  const { data: skills, refetch } = useQuery({
+  const { data: skills } = useQuery({
     queryKey: ["skills"],
     queryFn: () => get<Skill[]>(`/projects/skill/list/`),
   });
@@ -120,13 +145,19 @@ const ProjectCreatePage = () => {
               skills={skills || []}
               initialData={{
                 images: project.images || [],
+                detail_images: project.detail_images || [],
                 skill_ids: project.skill_ids || [],
                 title: project.translations[option.value]?.title || "",
+                subtitle_start:
+                  project.translations[option.value]?.subtitle?.start || "",
+                subtitle_end:
+                  project.translations[option.value]?.subtitle?.end || "",
                 description:
                   project.translations[option.value]?.description || "",
                 is_featured: project.is_featured || false,
                 info: project.translations[option.value]?.info || [],
                 need_ai_generate: project.need_ai_generate || false,
+                github_url: "",
               }}
               onChange={(data) => handleChange(data, option.value)}
             />

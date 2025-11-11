@@ -12,9 +12,12 @@ class Project(models.Model):
     skills = models.ManyToManyField(
         'ProjectSkill', related_name='projects', blank=True)
     images = models.JSONField(default=list, blank=True)
+    detail_images = models.JSONField(default=list, blank=True)
     is_featured = models.BooleanField(default=False)
     need_ai_generate = models.BooleanField(
         default=True)
+    github_url = models.URLField(max_length=500, null=True, blank=True)
+    live_demo_url = models.URLField(max_length=500, null=True, blank=True)
 
     class Meta:
         db_table = 'api_project'
@@ -41,8 +44,15 @@ class ProjectTranslation(models.Model):
     language = models.CharField(
         max_length=2, choices=LANGUAGE_CHOICES, db_index=True)
     title = models.CharField(max_length=200)
+    subtitle = models.JSONField(default=dict, blank=True)
     description = models.TextField(null=True, blank=True)
     info = models.JSONField(default=list, blank=True)
+    summary = models.TextField(null=True, blank=True)
+    introduction = models.TextField(null=True, blank=True)
+    challenges = models.JSONField(default=list, blank=True)
+    solutions = models.TextField(null=True, blank=True)
+    what_i_did = models.JSONField(default=list, blank=True)
+    extra_info = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
