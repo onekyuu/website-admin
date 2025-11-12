@@ -2,12 +2,16 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.views import APIView
 from api.gallery.models import Gallery
 from api.gallery.serializers import GallerySerializer, GalleryCreateSerializer
 from api.gallery.utils import extract_exif_data, create_thumbnail
 from api.core.permissions import IsAdminOrReadOnly
 from api.core.pagination import CustomPageNumberPagination
 from api.oss.utils import upload_file_to_oss, delete_file_from_oss
+from django.db.models.functions import ExtractYear
+from django.db.models import Count, Q
+from collections import OrderedDict
 import shortuuid
 
 
@@ -27,7 +31,102 @@ class GalleryListView(generics.ListAPIView):
         if featured == 'true':
             queryset = queryset.filter(is_featured=True)
 
+        ordering = self.request.query_params.get('ordering', '-taken_at')
+        valid_orderings = ['taken_at', '-taken_at', 'created_at',
+                           '-created_at', 'view_count', '-view_count']
+
+        if ordering in valid_orderings:
+            queryset = queryset.order_by(ordering, '-created_at')
+        else:
+            queryset = queryset.order_by('-taken_at', '-created_at')
+
         return queryset
+
+
+class GalleryTimelineView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        category = request.query_params.get('category')
+        featured = request.query_params.get('featured')
+
+        queryset = Gallery.objects.filter(
+            is_published=True,
+            taken_at__isnull=False
+        )
+
+        if category:
+            queryset = queryset.filter(category=category)
+        if featured == 'true':
+            queryset = queryset.filter(is_featured=True)
+
+        years_data = queryset.annotate(
+            year=ExtractYear('taken_at')
+        ).values('year').annotate(
+            count=Count('id')
+        ).order_by('-year')
+
+        timeline = OrderedDict()
+
+        for year_info in years_data:
+            year = year_info['year']
+
+            photos = queryset.filter(
+                taken_at__year=year
+            ).order_by('-taken_at', '-created_at')
+
+            serializer = GallerySerializer(photos, many=True)
+
+            timeline[str(year)] = {
+                'year': year,
+                'count': year_info['count'],
+                'photos': serializer.data
+            }
+
+        return Response({
+            'timeline': timeline,
+            'total_years': len(timeline),
+            'total_photos': queryset.count()
+        })
+
+
+class GalleryYearView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, year):
+        category = request.query_params.get('category')
+        featured = request.query_params.get('featured')
+
+        queryset = Gallery.objects.filter(
+            is_published=True,
+            taken_at__year=year
+        )
+
+        if category:
+            queryset = queryset.filter(category=category)
+        if featured == 'true':
+            queryset = queryset.filter(is_featured=True)
+
+        photos_by_month = OrderedDict()
+
+        for month in range(12, 0, -1):
+            month_photos = queryset.filter(
+                taken_at__month=month
+            ).order_by('-taken_at')
+
+            if month_photos.exists():
+                serializer = GallerySerializer(month_photos, many=True)
+                photos_by_month[f'{year}-{month:02d}'] = {
+                    'month': month,
+                    'count': month_photos.count(),
+                    'photos': serializer.data
+                }
+
+        return Response({
+            'year': year,
+            'months': photos_by_month,
+            'total_photos': queryset.count()
+        })
 
 
 class GalleryCreateView(generics.CreateAPIView):
@@ -57,7 +156,6 @@ class GalleryCreateView(generics.CreateAPIView):
                     thumbnail, directory='uploads/gallery/thumbnails')
                 thumbnail_url = thumbnail_result['url']
 
-            # 生成唯一 slug
             slug = f"photo-{shortuuid.uuid()[:8]}"
 
             gallery = Gallery.objects.create(
@@ -98,7 +196,7 @@ class GalleryCreateView(generics.CreateAPIView):
 class GalleryDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = GallerySerializer
     queryset = Gallery.objects.all()
-    lookup_field = 'slug'  # 改为通过 slug 查询
+    lookup_field = 'slug'
 
     def get_permissions(self):
         if self.request.method == 'GET':
