@@ -16,4 +16,7 @@ urlpatterns = [
 
     # 图库管理
     path('', include('api.gallery.urls')),
+
+    # 发送邮件
+    path('', include('api.contact.urls')),
 ]

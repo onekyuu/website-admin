@@ -202,3 +202,15 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 AUTH_USER_MODEL = 'api.User'
+
+# 邮件配置
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # 使用Gmail，也可以用其他邮箱服务
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # 你的邮箱
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # 邮箱密码或应用专用密码
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_HOST_USER')
+
+# 接收联系表单的邮箱
+CONTACT_EMAIL_RECIPIENT = os.getenv('CONTACT_EMAIL_RECIPIENT', EMAIL_HOST_USER)
