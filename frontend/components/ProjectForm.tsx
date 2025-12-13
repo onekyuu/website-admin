@@ -135,9 +135,10 @@ const ProjectForm: FC<ProjectFormProps> = ({
     if (userPermissions?.is_guest) {
       throw new Error("Guest users are not allowed to delete images.");
     }
+    const objectKey = new URL(imageUrl).pathname.substring(1);
     try {
       await del("/oss/images/delete/", {
-        url: imageUrl,
+        object_key: objectKey,
       });
     } catch (error) {
       console.error("Failed to delete image from OSS:", error);
