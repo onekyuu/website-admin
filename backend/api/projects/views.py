@@ -14,7 +14,15 @@ class ProjectListApiView(generics.ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Project.objects.all()
+        queryset = Project.objects.all()
+        ordering = self.request.query_params.get('ordering')
+
+        if ordering == 'priority':
+            return queryset.order_by('priority', '-created_at')
+        if ordering == '-priority':
+            return queryset.order_by('-priority', '-created_at')
+
+        return queryset.order_by('-created_at')
 
 
 class ProjectCreateApiView(generics.CreateAPIView):
