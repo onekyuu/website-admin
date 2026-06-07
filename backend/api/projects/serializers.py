@@ -108,7 +108,8 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'translations', 'slug', 'created_by',
             'created_at', 'updated_at', 'skills', 'skill_ids',
-            'images', 'detail_images', 'is_featured', 'need_ai_generate',
+            'images', 'detail_images', 'is_featured', 'priority',
+            'need_ai_generate',
             'github_url', 'live_demo_url', 'involved_areas', 'tools'
         ]
         read_only_fields = ['slug', 'created_by', 'created_at', 'updated_at']

@@ -12,6 +12,8 @@ const Project = {
   edit: "プロジェクトを編集",
   delete: "プロジェクトを削除",
   isFeatured: "注目プロジェクト",
+  priority: "優先度",
+  priorityPlaceholder: "プロジェクトの優先度を入力してください",
   needAiGenerate: "AI生成が必要",
   infoMaxLength: "最大4つの情報項目が許可されています",
   infoPlaceholder: "プロジェクト情報を入力してください",

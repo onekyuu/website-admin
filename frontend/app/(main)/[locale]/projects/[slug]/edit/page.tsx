@@ -111,6 +111,7 @@ const ProjectEditPage = () => {
       draft.skill_ids = data.skill_ids || [];
       draft.need_ai_generate = data.need_ai_generate || false;
       draft.is_featured = data.is_featured || false;
+      draft.priority = data.priority;
       draft.github_url = data.github_url || "";
       draft.live_demo_url = data.live_demo_url || "";
       draft.involved_areas = data.involved_areas || "";
@@ -131,6 +132,7 @@ const ProjectEditPage = () => {
         info: newProject.translations?.[lang]?.info || [],
         need_ai_generate: newProject.need_ai_generate || false,
         is_featured: newProject.is_featured || false,
+        priority: newProject.priority,
         subtitle_start: newProject.translations?.[lang]?.subtitle?.start || "",
         subtitle_end: newProject.translations?.[lang]?.subtitle?.end || "",
         summary: newProject.translations?.[lang]?.summary || "",
@@ -160,6 +162,7 @@ const ProjectEditPage = () => {
         skill_ids: projectData.skills.map((skill) => skill.id),
         need_ai_generate: projectData.need_ai_generate || false,
         is_featured: projectData.is_featured || false,
+        priority: projectData.priority ?? 0,
         github_url: projectData.github_url || "",
         live_demo_url: projectData.live_demo_url || "",
         involved_areas: projectData.involved_areas || "",

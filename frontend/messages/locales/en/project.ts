@@ -11,6 +11,8 @@ const Project = {
   edit: "Edit Project",
   delete: "Delete Project",
   isFeatured: "Is Featured",
+  priority: "Priority",
+  priorityPlaceholder: "Enter project priority",
   needAiGenerate: "Need AI Generate",
   infoMaxLength: "Maximum 4 info items allowed",
   infoPlaceholder: "Enter project info",

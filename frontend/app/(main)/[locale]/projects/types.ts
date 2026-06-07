@@ -16,6 +16,7 @@ export interface ProjectBase {
   detail_images?: string[];
   skills: Skill[];
   is_featured: boolean;
+  priority: number;
   need_ai_generate: boolean;
   github_url?: string;
   live_demo_url?: string;
@@ -50,6 +51,7 @@ export interface CreateProjectBaseData {
   detail_images?: string[];
   skill_ids?: number[];
   is_featured: boolean;
+  priority: number;
   need_ai_generate: boolean;
   github_url?: string;
   live_demo_url?: string;
@@ -78,6 +80,7 @@ export interface NewProjectData {
   detail_images?: string[];
   skill_ids: number[];
   is_featured: boolean;
+  priority: number;
   need_ai_generate: boolean;
   github_url?: string;
   live_demo_url?: string;
