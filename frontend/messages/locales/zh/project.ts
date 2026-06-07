@@ -12,6 +12,8 @@ const Project = {
   edit: "编辑项目",
   delete: "删除项目",
   isFeatured: "是否置顶",
+  priority: "优先级",
+  priorityPlaceholder: "请输入项目优先级",
   needAiGenerate: "需要AI生成",
   infoMaxLength: "最多允许4条信息项",
   infoPlaceholder: "请输入项目信息",

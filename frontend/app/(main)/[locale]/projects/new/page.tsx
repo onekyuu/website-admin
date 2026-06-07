@@ -31,6 +31,7 @@ const ProjectCreatePage = () => {
     detail_images: [],
     skill_ids: [],
     is_featured: false,
+    priority: 0,
     need_ai_generate: false,
     github_url: "",
     live_demo_url: "",
@@ -79,6 +80,7 @@ const ProjectCreatePage = () => {
       detail_images: data.detail_images,
       skill_ids: data.skill_ids || [],
       is_featured: data.is_featured || false,
+      priority: data.priority,
       need_ai_generate: data.need_ai_generate || false,
       github_url: data.github_url || "",
       live_demo_url: data.live_demo_url || "",
@@ -161,6 +163,7 @@ const ProjectCreatePage = () => {
                 description:
                   project.translations[option.value]?.description || "",
                 is_featured: project.is_featured || false,
+                priority: project.priority,
                 info: project.translations[option.value]?.info || [],
                 need_ai_generate: project.need_ai_generate || false,
                 github_url: project.github_url || "",

@@ -78,6 +78,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
     detail_images: z.array(z.string()).optional(),
     skill_ids: z.array(z.number()),
     is_featured: z.boolean(),
+    priority: z.number().int().nonnegative(),
     info: z.array(z.string()).max(4, t("infoMaxLength")),
     need_ai_generate: z.boolean(),
     extra_info: z
@@ -106,6 +107,7 @@ const ProjectForm: FC<ProjectFormProps> = ({
       detail_images: initialData?.detail_images || [],
       skill_ids: initialData?.skill_ids || [],
       is_featured: initialData?.is_featured || false,
+      priority: initialData?.priority ?? 0,
       info: initialData?.info || [],
       need_ai_generate: initialData?.need_ai_generate || false,
       extra_info: initialData?.extra_info || {},
@@ -327,6 +329,28 @@ const ProjectForm: FC<ProjectFormProps> = ({
               )}
             />
           </div>
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("priority")}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={1}
+                    {...field}
+                    onChange={(event) =>
+                      field.onChange(Number(event.target.value))
+                    }
+                    placeholder={t("priorityPlaceholder")}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="github_url"

@@ -46,6 +46,7 @@ class Project(models.Model):
     images = models.JSONField(default=list, blank=True)
     detail_images = models.JSONField(default=list, blank=True)
     is_featured = models.BooleanField(default=False)
+    priority = models.PositiveIntegerField(default=0)
     need_ai_generate = models.BooleanField(default=True)
     github_url = models.URLField(max_length=500, null=True, blank=True)
     live_demo_url = models.URLField(max_length=500, null=True, blank=True)
