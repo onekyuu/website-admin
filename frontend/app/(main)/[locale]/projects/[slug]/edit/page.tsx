@@ -35,8 +35,8 @@ const ProjectEditPage = () => {
 
   const [newProject, setNewProject] = useImmer<UpdateProjectData | null>(null);
 
-  const { data: projectData } = useQuery({
-    queryKey: ["project-detail", slug],
+  const { data: projectData, isFetchedAfterMount } = useQuery({
+    queryKey: ["project-edit", slug],
     queryFn: () => get<Project>(`/projects/detail/${slug}/`),
   });
 
@@ -55,9 +55,20 @@ const ProjectEditPage = () => {
 
   const mutation = useMutation({
     mutationFn: handleSaveProject,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success("更新成功");
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+
+      queryClient.setQueryData<Project[]>(["projects"], (projects) =>
+        projects?.map((project) => (project.id === data.id ? data : project)),
+      );
+      queryClient.setQueryData(["project-edit", slug], data);
+      queryClient.setQueryData(["project-edit", data.slug], data);
+
+      if (slug !== data.slug) {
+        queryClient.removeQueries({ queryKey: ["project-edit", slug] });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
       router.push("/projects");
     },
     onError: (error) => {
@@ -148,11 +159,11 @@ const ProjectEditPage = () => {
         tools: newProject.tools || "",
       };
     },
-    [newProject, projectData],
+    [newProject],
   );
 
   useEffect(() => {
-    if (projectData) {
+    if (projectData && isFetchedAfterMount) {
       setNewProject({
         id: projectData.id,
         slug: projectData.slug,
@@ -169,7 +180,7 @@ const ProjectEditPage = () => {
         tools: projectData.tools || "",
       });
     }
-  }, [projectData, setNewProject]);
+  }, [isFetchedAfterMount, projectData, setNewProject]);
 
   return (
     <div>
