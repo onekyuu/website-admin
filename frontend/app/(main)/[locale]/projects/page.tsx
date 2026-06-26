@@ -4,7 +4,7 @@ import { DataTable } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import { del, get, patch, post } from "@/lib/fetcher";
 import { useAuthStore } from "@/lib/stores/auth";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import React from "react";
@@ -18,6 +18,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 const ProjectPage = () => {
   const t = useTranslations("Project");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const userPermissions = useAuthStore(
     (state) => state.allUserData,
   )?.permissions;
@@ -92,6 +93,9 @@ const ProjectPage = () => {
               variant="outline"
               className="cursor-pointer"
               onClick={() => {
+                queryClient.removeQueries({
+                  queryKey: ["project-edit", row.original.slug],
+                });
                 router.push(`/projects/${row.original.slug}/edit`);
               }}
             >
