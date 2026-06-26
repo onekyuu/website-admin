@@ -1,0 +1,30 @@
+# GitHub Linguist overrides
+#
+# Keep language statistics focused on hand-written application source.
+
+# Explicitly count source files used by this project.
+*.py linguist-detectable=true
+*.ts linguist-detectable=true
+*.tsx linguist-detectable=true
+*.css linguist-detectable=true
+*.scss linguist-detectable=true
+*.mjs linguist-detectable=true
+*.yml linguist-detectable=true
+*.yaml linguist-detectable=true
+
+# Dockerfile variants are part of the codebase even when they use suffixes.
+**/Dockerfile linguist-detectable=true
+**/Dockerfile.* linguist-language=Dockerfile linguist-detectable=true
+
+# Exclude generated/dependency metadata from language totals.
+**/Pipfile.lock linguist-generated=true
+**/pnpm-lock.yaml linguist-generated=true
+**/package-lock.json linguist-generated=true
+**/yarn.lock linguist-generated=true
+
+# Django migrations are generated from model changes.
+**/migrations/*.py linguist-generated=true
+
+# Documentation and editor/project metadata should not affect code stats.
+*.md linguist-documentation=true
+**/.vscode/** linguist-vendored=true
