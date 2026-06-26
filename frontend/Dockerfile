@@ -1,26 +1,6 @@
-# 使用阿里云ACR 镜像
-FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-frontend-base:v1.0.14 AS base
-
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-# COPY --from=base /app/node_modules ./node_modules
-COPY . .
-
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN \
-  if [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
-
-# Production image, copy all the files and run next
-FROM base AS runner
+# The GitHub Actions workflow builds Next.js and ships only these artifacts:
+# .next/standalone, .next/static and public.
+FROM registry.cn-hangzhou.aliyuncs.com/keyu-images/website-admin-frontend-base:v1.0.14 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -30,12 +10,12 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+COPY --chown=nextjs:nodejs public ./public
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --chown=nextjs:nodejs .next/standalone ./
+COPY --chown=nextjs:nodejs .next/static ./.next/static
 
 USER nextjs
 

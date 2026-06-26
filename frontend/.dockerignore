@@ -1,8 +1,8 @@
 node_modules
-.next
+.next/cache
 .git
 *.log
-.env
+.env*
 *.swp
 .vscode
 __pycache__
