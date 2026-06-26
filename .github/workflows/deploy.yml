@@ -15,12 +15,12 @@ jobs:
       - name: 🟢 Setup Node.js with pnpm
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version-file: frontend/.nvmrc
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.12
+          version: 10.12.2
 
       - name: 📦 Get pnpm store directory
         shell: bash
@@ -53,23 +53,118 @@ jobs:
       - name: ✅ Quality Check Passed
         run: echo "All quality checks passed! Proceeding with deployment..."
 
-  project-prepare:
+  build-frontend:
     runs-on: ubuntu-latest
     needs: code-quality
     steps:
       - name: 🛎️ Checkout code
         uses: actions/checkout@v4
 
+      - name: 🟢 Setup Node.js with pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.2
+
+      - name: 📦 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 🗂️ Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: 🐧 Set up SSH
         uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.ALIYUN_SSH_PRIVATE_KEY }}
 
-      - name: 📤 Copy project to Aliyun
+      - name: 🧾 Prepare frontend build env
+        env:
+          ADMIN_FRONTEND_ENV: ${{ secrets.ADMIN_FRONTEND_ENV }}
+        run: |
+          if [ -n "$ADMIN_FRONTEND_ENV" ]; then
+            printf "%s\n" "$ADMIN_FRONTEND_ENV" > frontend/.env.production
+          else
+            scp -o StrictHostKeyChecking=no \
+              ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }}:/var/www/env/admin.frontend.env \
+              frontend/.env.production
+          fi
+
+      - name: 📦 Install dependencies
+        run: cd frontend && pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build frontend
+        run: cd frontend && pnpm run build
+
+      - name: 🧹 Remove env files from standalone artifact
+        run: rm -f frontend/.next/standalone/.env*
+
+      - name: 📦 Package frontend artifact
+        run: |
+          tar -czf frontend-build.tar.gz \
+            -C frontend \
+            .next/standalone \
+            .next/static \
+            public \
+            Dockerfile \
+            .dockerignore
+
+      - name: ⬆️ Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend-build.tar.gz
+          if-no-files-found: error
+
+  project-prepare:
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: 🛎️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: ⬇️ Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: .deploy
+
+      - name: 📦 Unpack frontend artifact
+        run: |
+          mkdir -p .deploy/frontend
+          tar -xzf .deploy/frontend-build.tar.gz -C .deploy/frontend
+
+      - name: 🐧 Set up SSH
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.ALIYUN_SSH_PRIVATE_KEY }}
+
+      - name: 📤 Copy project files to Aliyun
         run: |
           rsync -avz --delete \
+            --exclude ".git/" \
+            --exclude ".deploy/" \
+            --exclude "frontend/" \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }}:/var/www/website-admin
+
+      - name: 📤 Copy frontend build artifact to Aliyun
+        run: |
+          rsync -avz --delete \
+            --exclude ".env" \
+            --exclude ".env.production" \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            .deploy/frontend/ ${{ secrets.ALIYUN_USER }}@${{ secrets.ALIYUN_HOST }}:/var/www/website-admin/frontend/
 
       - name: 🧾 Prepare .env files
         run: |
