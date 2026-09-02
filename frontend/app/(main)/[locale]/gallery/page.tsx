@@ -34,19 +34,60 @@ import { Switch } from "@/components/ui/switch";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "@/lib/stores/auth";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const GalleryPage: FC = () => {
   const t = useTranslations("Gallery");
   const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const userPermissions = useAuthStore(
     (state) => state.allUserData,
   )?.permissions;
 
   const { data: galleryList, refetch } = useQuery({
-    queryKey: ["gallery"],
-    queryFn: () => get<GalleryListResponse>(`/gallery/list/`),
+    queryKey: ["gallery", page],
+    queryFn: () => get<GalleryListResponse>("/gallery/list/", { page }),
+    placeholderData: (previousData) => previousData,
   });
+
+  const paginationItems = () => {
+    if (!galleryList || galleryList.totalPages <= 7) {
+      return Array.from(
+        { length: galleryList?.totalPages ?? 0 },
+        (_, index) => index + 1,
+      );
+    }
+
+    if (page <= 3) return [1, 2, 3, 4, 5, "ellipsis", galleryList.totalPages];
+    if (page >= galleryList.totalPages - 2) {
+      return [
+        1,
+        "ellipsis",
+        ...Array.from(
+          { length: 5 },
+          (_, index) => galleryList.totalPages - 4 + index,
+        ),
+      ];
+    }
+    return [
+      1,
+      "ellipsis",
+      page - 1,
+      page,
+      page + 1,
+      "ellipsis",
+      galleryList.totalPages,
+    ];
+  };
 
   const formSchema = z.object({
     file: z
@@ -348,6 +389,54 @@ const GalleryPage: FC = () => {
           <GalleryCard key={gallery.id} gallery={gallery} />
         ))}
       </div>
+
+      {galleryList && galleryList.totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => page > 1 && setPage(page - 1)}
+                className={
+                  page === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+
+            {paginationItems().map((item, index) =>
+              item === "ellipsis" ? (
+                <PaginationItem key={`ellipsis-${index}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={item}>
+                  <PaginationLink
+                    isActive={page === item}
+                    onClick={() => setPage(item as number)}
+                    className="cursor-pointer"
+                  >
+                    {item}
+                  </PaginationLink>
+                </PaginationItem>
+              ),
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  page < galleryList.totalPages && setPage(page + 1)
+                }
+                className={
+                  page === galleryList.totalPages
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };

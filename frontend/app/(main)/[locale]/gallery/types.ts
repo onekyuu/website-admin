@@ -38,6 +38,6 @@ export interface GalleryListResponse {
   results: Gallery[];
   count: number;
   page: number;
-  page_size: number;
-  total_pages: number;
+  pageSize: number;
+  totalPages: number;
 }
